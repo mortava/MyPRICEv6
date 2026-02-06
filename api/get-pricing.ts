@@ -38,15 +38,11 @@ async function getOAuthToken(): Promise<string> {
 }
 
 // ================= ENUM MAPPING FUNCTIONS =================
-function mapLoanPurpose(purpose: string, isDSCR: boolean = false): number {
-  // MeridianLink sLPurposeTPe codes: 1=Purchase, 2=Cash-Out Refi, 3=Rate/Term Refi (No Cash-Out)
-  if (isDSCR) {
-    // DSCR: both refi types map to code 2 (Cash-Out) - lenders don't distinguish for investment
-    const map: Record<string, number> = { purchase: 1, refinance: 2, cashout: 2 }
-    return map[purpose] || 1
-  }
-  // Standard: rate/term refi = 3 (No Cash-Out), cash-out refi = 2
-  const map: Record<string, number> = { purchase: 1, refinance: 3, cashout: 2 }
+function mapLoanPurpose(purpose: string): number {
+  // MeridianLink sLPurposeTPe: 1=Purchase, 2=Refinance (all types)
+  // This lender's Non-QM config uses code 2 for both rate/term and cash-out refinance.
+  // Cash-out vs rate/term adjustments are stripped client-side based on user selection.
+  const map: Record<string, number> = { purchase: 1, refinance: 2, cashout: 2 }
   return map[purpose] || 1
 }
 
@@ -173,7 +169,7 @@ function buildLOXmlFormat(formData: any): string {
     <field id="sOccTPe">${isDSCR ? 3 : mapOccupancy(formData.occupancyType || 'primary')}</field>
     <field id="sProdSpT">${mapPropertyType(formData.propertyType || 'sfr')}</field>
     <field id="sProdIsSpInRuralArea">${formData.isRuralProperty || false}</field>
-    <field id="sLPurposeTPe">${mapLoanPurpose(formData.loanPurpose || 'purchase', isDSCR)}</field>
+    <field id="sLPurposeTPe">${mapLoanPurpose(formData.loanPurpose || 'purchase')}</field>
     <field id="sHouseValPe">${propertyValue}</field>
     <field id="sDownPmtPcPe">${downPaymentPct.toFixed(2)}</field>
     <field id="sLAmtCalcPe">${loanAmount}</field>
@@ -519,23 +515,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
-    // Strip DSCR adjustments from results when doc type is NOT DSCR
-    // Note: Don't filter programs/rate options by name - Non-QM programs may mention
-    // DSCR in descriptions but are still valid. Only remove DSCR adjustment line items.
-    if (!isDSCRRequest) {
-      eligiblePrograms.forEach((p: any) => {
-        if (p.rateOptions) {
-          p.rateOptions.forEach((ro: any) => {
-            if (ro.adjustments) {
-              ro.adjustments = ro.adjustments.filter((adj: any) => {
-                const desc = (adj.description || '').toUpperCase()
-                return !desc.includes('DSCR')
-              })
-            }
-          })
-        }
+    // Strip irrelevant adjustments based on loan scenario
+    eligiblePrograms.forEach((p: any) => {
+      if (!p.rateOptions) return
+      p.rateOptions.forEach((ro: any) => {
+        if (!ro.adjustments) return
+        ro.adjustments = ro.adjustments.filter((adj: any) => {
+          const desc = (adj.description || '').toUpperCase()
+          // Strip DSCR adjustments when doc type is NOT DSCR
+          if (!isDSCRRequest && desc.includes('DSCR')) return false
+          // Strip CASHOUT adjustments when loan purpose is rate/term refi
+          if (formData.loanPurpose === 'refinance' && desc.includes('CASHOUT')) return false
+          return true
+        })
       })
-    }
+    })
 
     if (eligiblePrograms.length === 0) {
       return res.json({
@@ -577,8 +571,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         programs: eligiblePrograms,
         totalPrograms: eligiblePrograms.length,
         source: 'meridianlink',
-        globalAdjustments: !isDSCRRequest && result.globalAdjustments
-          ? result.globalAdjustments.filter((adj: any) => !(adj.description || '').toUpperCase().includes('DSCR'))
+        globalAdjustments: result.globalAdjustments
+          ? result.globalAdjustments.filter((adj: any) => {
+              const desc = (adj.description || '').toUpperCase()
+              if (!isDSCRRequest && desc.includes('DSCR')) return false
+              if (formData.loanPurpose === 'refinance' && desc.includes('CASHOUT')) return false
+              return true
+            })
           : result.globalAdjustments,
         debugXmlSample: result.debugXmlSample,
         debugAdjustmentsSection: result.debugAdjustmentsSection,
