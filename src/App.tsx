@@ -143,7 +143,7 @@ const FIELD_LABELS: Record<string, string> = {
   amortization: 'Amortization', product: 'Product', paymentType: 'Payment', impoundType: 'Impound Type'
 }
 
-// ZIP code to location lookup (simplified - in production use API)
+// ZIP code to location lookup cache (auto-populated from API + preset values)
 const ZIP_LOOKUP: Record<string, { city: string; county: string; state: string }> = {
   '90210': { city: 'Beverly Hills', county: 'Los Angeles', state: 'CA' },
   '90120': { city: 'Beverly Hills', county: 'Los Angeles', state: 'CA' },
@@ -270,18 +270,52 @@ export default function App() {
     return prop > 0 ? ((loan / prop) * 100).toFixed(2) : '0.00'
   })()
 
-  // Auto-populate location from ZIP
+  // Auto-populate location from ZIP using API lookup
+  const [zipLoading, setZipLoading] = useState(false)
   useEffect(() => {
     if (formData.propertyZip.length === 5) {
-      const location = ZIP_LOOKUP[formData.propertyZip]
-      if (location) {
+      // First check local cache
+      const cachedLocation = ZIP_LOOKUP[formData.propertyZip]
+      if (cachedLocation) {
         setFormData(prev => ({
           ...prev,
-          propertyCity: location.city,
-          propertyCounty: location.county,
-          propertyState: location.state
+          propertyCity: cachedLocation.city,
+          propertyCounty: cachedLocation.county,
+          propertyState: cachedLocation.state
         }))
+        return
       }
+
+      // Fetch from Zippopotam.us API (free, no key required)
+      const fetchZipData = async () => {
+        setZipLoading(true)
+        try {
+          const response = await fetch(`https://api.zippopotam.us/us/${formData.propertyZip}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.places && data.places.length > 0) {
+              const place = data.places[0]
+              setFormData(prev => ({
+                ...prev,
+                propertyCity: place['place name'] || '',
+                propertyCounty: place['county'] || place['place name'] || '',
+                propertyState: place['state abbreviation'] || ''
+              }))
+              // Cache the result
+              ZIP_LOOKUP[formData.propertyZip] = {
+                city: place['place name'] || '',
+                county: place['county'] || place['place name'] || '',
+                state: place['state abbreviation'] || ''
+              }
+            }
+          }
+        } catch (err) {
+          console.log('ZIP lookup failed:', err)
+        } finally {
+          setZipLoading(false)
+        }
+      }
+      fetchZipData()
     }
   }, [formData.propertyZip])
 
@@ -292,9 +326,13 @@ export default function App() {
       if (field === 'loanType' && value === 'dscr') {
         updated.documentationType = 'dscr'
       }
-      // Also sync if documentationType is set to dscr and loanType isn't already dscr
-      if (field === 'documentationType' && value === 'dscr' && prev.loanType !== 'dscr') {
-        updated.loanType = 'dscr'
+      // DSCR Income Doc Type: Auto-default occupancy to Investment
+      if (field === 'documentationType' && value === 'dscr') {
+        updated.occupancyType = 'investment'
+        // Also sync loanType if not already dscr
+        if (prev.loanType !== 'dscr') {
+          updated.loanType = 'dscr'
+        }
       }
       return updated
     })
@@ -742,12 +780,15 @@ export default function App() {
                     {/* LINE 1: Location fields */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
-                        <Label className={hasError('propertyZip') ? 'text-red-600' : ''}>ZIP Code *</Label>
+                        <Label className={hasError('propertyZip') ? 'text-red-600' : ''}>
+                          ZIP Code * {zipLoading && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
+                        </Label>
                         <Input
                           maxLength={5}
                           value={formData.propertyZip}
                           onChange={(e) => handleInputChange('propertyZip', e.target.value.replace(/\D/g, ''))}
                           className={hasError('propertyZip') ? 'border-red-500' : ''}
+                          placeholder="Enter ZIP to auto-fill"
                         />
                         {hasError('propertyZip') && <p className="text-xs text-red-600">{validationErrors.propertyZip}</p>}
                       </div>
