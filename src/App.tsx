@@ -475,13 +475,14 @@ export default function App() {
     return map[prepayPeriod] || '3 YR PPP'
   }
 
-  // Find the TARGET PRICING based on user's PPP selection (Investment only) or best non-PPP program
+  // Find the TARGET PRICING - Always prefer 5YR PPP (60MO) for DSCR/Investment (best rates)
   const getTargetPricing = (): TargetPricingOption | null => {
     if (!result?.programs || !Array.isArray(result.programs)) return null
 
     // CRITICAL: PPP is ONLY allowed for Investment properties
     const isPPPAllowed = formData.occupancyType === 'investment'
-    const selectedPPP = isPPPAllowed ? getPPPPattern(formData.prepayPeriod) : ''
+    // Always use 5YR PPP for DSCR/Investment - it has the best rates
+    const selectedPPP = isPPPAllowed ? '5 YR PPP' : ''
     let targetOption: TargetPricingOption | null = null
     let closestDistance = Infinity
 
@@ -507,10 +508,9 @@ export default function App() {
         // For Primary/Secondary homes: SKIP any PPP programs entirely
         if (!isPPPAllowed && hasPPP) return
 
-        // For Investment properties: match the user's selected PPP
+        // For Investment properties: match 5YR/60MO PPP (best rates for DSCR)
         if (isPPPAllowed) {
-          const matchesPPP = desc.includes(selectedPPP.toUpperCase()) ||
-                            desc.includes(selectedPPP.replace(' YR ', 'YR ').toUpperCase())
+          const matchesPPP = desc.includes('5 YR PPP') || desc.includes('5YR PPP') || desc.includes('60MO PPP')
           if (!matchesPPP) return
         }
 
@@ -585,7 +585,7 @@ export default function App() {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Cloud className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-semibold text-gray-900">MyPrice</span>
+              <span className="text-xl font-semibold text-gray-900">OpenPrice</span>
             </div>
             <nav className="flex items-center gap-6">
               <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900">Dashboard</a>
@@ -598,10 +598,6 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Quick Pricer</h1>
-        </div>
-
         <div className="space-y-8">
           <div>
             <Card>
@@ -1502,9 +1498,9 @@ export default function App() {
               <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
                 <Cloud className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm font-medium text-gray-600">MyPrice</span>
+              <span className="text-sm font-medium text-gray-600">OpenPrice</span>
             </div>
-            <p className="text-sm text-gray-500">© {new Date().getFullYear()} MyPrice. All rights reserved.</p>
+            <p className="text-sm text-gray-500">© {new Date().getFullYear()} OpenPrice. All rights reserved.</p>
           </div>
         </div>
       </footer>
