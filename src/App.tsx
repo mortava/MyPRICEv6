@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calculator, DollarSign, Cloud, Loader2, CheckCircle2, AlertCircle, Info, ChevronDown, ChevronUp } from 'lucide-react'
+import { Calculator, DollarSign, Loader2, CheckCircle2, AlertCircle, Info, ChevronDown, ChevronUp, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -271,6 +271,7 @@ export default function App() {
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const [expandedProgram, setExpandedProgram] = useState<string | null>(null)
   const [showOtherDetails, setShowOtherDetails] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Auto-populate location from ZIP using API lookup
   const [zipLoading, setZipLoading] = useState(false)
@@ -615,23 +616,46 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Cloud className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-semibold text-gray-900">OpenPrice</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold text-gray-900 tracking-tight">OpenBroker</span>
+              <span className="bg-gray-900 text-white text-xs font-bold px-1.5 py-0.5 rounded">AI</span>
             </div>
-            <nav className="flex items-center gap-6">
-              <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900">Dashboard</a>
-              <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900">Loans</a>
-              <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900">Settings</a>
+            {/* Desktop nav */}
+            <nav className="hidden md:flex items-center gap-6">
+              <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900">AI Deal Desk</a>
+              <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pipeline</a>
+              <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900">AVM</a>
+              <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900">AUS</a>
               <Button variant="outline" size="sm">Sign Out</Button>
             </nav>
+            {/* Mobile hamburger */}
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-200 bg-white shadow-lg absolute left-0 right-0 z-50">
+            <div className="px-4 py-3 space-y-2">
+              <a href="#" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md" onClick={() => setMobileMenuOpen(false)}>AI Deal Desk</a>
+              <a href="#" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md" onClick={() => setMobileMenuOpen(false)}>Pipeline</a>
+              <a href="#" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md" onClick={() => setMobileMenuOpen(false)}>AVM</a>
+              <a href="#" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md" onClick={() => setMobileMenuOpen(false)}>AUS</a>
+              <div className="border-t pt-2 mt-2">
+                <Button variant="outline" size="sm" className="w-full" onClick={() => setMobileMenuOpen(false)}>Sign Out</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -650,7 +674,7 @@ export default function App() {
                   <div className="border-b pb-4">
                     <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Loan Information</h3>
                     {/* LINE 1: Lien Position, Lock Period, Loan Purpose, Term */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="lienPosition">Lien Position</Label>
                         <Select name="lienPosition" value={formData.lienPosition} onValueChange={(v) => handleInputChange('lienPosition', v)}>
@@ -701,7 +725,7 @@ export default function App() {
                     </div>
 
                     {/* LINE 2: Appraised Value/Sales Price, Loan Amount, LTV, CLTV (2nd/HELOC only), Amortization */}
-                    <div className={`grid grid-cols-2 ${formData.lienPosition !== '1st' ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4 mt-4`}>
+                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${formData.lienPosition !== '1st' ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4 mt-4`}>
                       <div className="space-y-2">
                         <Label htmlFor="propertyValue" className={hasError('propertyValue') ? 'text-red-600' : ''}>Value/Sales Price *</Label>
                         <Input
@@ -773,7 +797,7 @@ export default function App() {
                     </div>
 
                     {/* LINE 3: Payment, Impound Type + Cashout if applicable */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                       <div className="space-y-2">
                         <Label htmlFor="paymentType">Payment</Label>
                         <Select name="paymentType" value={formData.paymentType} onValueChange={(v) => handleInputChange('paymentType', v)}>
@@ -813,7 +837,7 @@ export default function App() {
                   <div className="border-b pb-4">
                     <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Property Details</h3>
                     {/* LINE 1: Location fields */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="propertyZip" className={hasError('propertyZip') ? 'text-red-600' : ''}>
                           ZIP Code * {zipLoading && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
@@ -848,7 +872,7 @@ export default function App() {
                       </div>
                     </div>
                     {/* LINE 2: Property type fields */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                       <div className="space-y-2">
                         <Label htmlFor="occupancyType" className={hasError('occupancyType') ? 'text-red-600' : ''}>Property Use *</Label>
                         <Select name="occupancyType" value={formData.occupancyType} onValueChange={(v) => handleInputChange('occupancyType', v)}>
@@ -1184,7 +1208,7 @@ export default function App() {
                     </button>
 
                     {showOtherDetails && (
-                      <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         <label htmlFor="is5PlusUnits" className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" id="is5PlusUnits" name="is5PlusUnits" checked={formData.is5PlusUnits} onChange={(e) => handleInputChange('is5PlusUnits', e.target.checked)} className="w-4 h-4 rounded" />
                           <span className="text-sm">5+ Units</span>
@@ -1245,7 +1269,7 @@ export default function App() {
                   </CardHeader>
                   <CardContent>
                     {/* Main Pricing Metrics */}
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                       <div className="bg-white rounded-lg p-4 border border-gray-200 text-center">
                         <div className="text-3xl font-bold text-primary">
                           {targetPricing ? formatPercent(targetPricing.rate) : formatPercent(safeNumber(result.rate))}
@@ -1355,29 +1379,29 @@ export default function App() {
                               onClick={() => setExpandedProgram(expandedProgram === programName ? null : programName)}
                               className="w-full px-4 py-3 hover:bg-gray-50"
                             >
-                              <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                 {/* Program Name */}
-                                <div className="flex-1 min-w-[200px] text-left">
+                                <div className="flex-1 text-left">
                                   <div className="font-medium text-sm text-gray-900">{programName}</div>
                                   <div className="text-xs text-gray-500">{filteredRateOptions.length} rate options</div>
                                 </div>
 
-                                {/* Key Metrics - Horizontal */}
-                                <div className="flex items-center gap-6 text-sm">
-                                  <div className="text-center min-w-[70px]">
-                                    <div className="text-primary font-bold text-lg">{bestRate ? safeNumber(bestRate.rate).toFixed(3) : '-'}%</div>
+                                {/* Key Metrics - Horizontal on desktop, grid on mobile */}
+                                <div className="grid grid-cols-4 sm:flex sm:items-center gap-3 sm:gap-6 text-sm w-full sm:w-auto mt-2 sm:mt-0">
+                                  <div className="text-center">
+                                    <div className="text-primary font-bold text-base sm:text-lg">{bestRate ? safeNumber(bestRate.rate).toFixed(3) : '-'}%</div>
                                     <div className="text-xs text-gray-500">Rate</div>
                                   </div>
-                                  <div className="text-center min-w-[70px]">
-                                    <div className="font-semibold text-gray-900">{bestRate ? (100 - safeNumber(bestRate.points)).toFixed(3) : '-'}</div>
+                                  <div className="text-center">
+                                    <div className="font-semibold text-gray-900 text-sm sm:text-base">{bestRate ? (100 - safeNumber(bestRate.points)).toFixed(3) : '-'}</div>
                                     <div className="text-xs text-gray-500">Price</div>
                                   </div>
-                                  <div className="text-center min-w-[70px]">
-                                    <div className="font-semibold text-gray-900">{bestRate ? safeNumber(bestRate.apr).toFixed(3) : '-'}%</div>
+                                  <div className="text-center">
+                                    <div className="font-semibold text-gray-900 text-sm sm:text-base">{bestRate ? safeNumber(bestRate.apr).toFixed(3) : '-'}%</div>
                                     <div className="text-xs text-gray-500">APR</div>
                                   </div>
-                                  <div className="text-center min-w-[90px]">
-                                    <div className="font-semibold text-gray-900">{bestPayment > 0 ? formatCurrency(bestPayment) : '-'}</div>
+                                  <div className="text-center">
+                                    <div className="font-semibold text-gray-900 text-sm sm:text-base">{bestPayment > 0 ? formatCurrency(bestPayment) : '-'}</div>
                                     <div className="text-xs text-gray-500">Payment</div>
                                   </div>
                                 </div>
@@ -1457,7 +1481,7 @@ export default function App() {
                                 {bestRate && bestRate.adjustments && bestRate.adjustments.length > 0 && (
                                   <div className="px-4 py-3 border-t bg-white">
                                     <div className="text-xs font-semibold text-gray-700 mb-2">Pricing Adjustments (Best Rate)</div>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                                       {bestRate.adjustments.map((adj: Adjustment, adjIdx: number) => (
                                         <div key={adjIdx} className="flex justify-between text-xs bg-gray-50 px-2 py-1 rounded">
                                           <span className="text-gray-600 truncate mr-2">{adj.description}</span>
@@ -1524,13 +1548,11 @@ export default function App() {
       <footer className="border-t border-gray-200 bg-white mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
-                <Cloud className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-sm font-medium text-gray-600">OpenPrice</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-bold text-gray-900 tracking-tight">OpenBroker</span>
+              <span className="bg-gray-900 text-white text-[10px] font-bold px-1 py-0.5 rounded leading-none">AI</span>
             </div>
-            <p className="text-sm text-gray-500">© {new Date().getFullYear()} OpenPrice. All rights reserved.</p>
+            <p className="hidden sm:block text-sm text-gray-500">© {new Date().getFullYear()} OpenBroker AI. All rights reserved.</p>
           </div>
         </div>
       </footer>
