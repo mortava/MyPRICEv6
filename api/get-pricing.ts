@@ -214,12 +214,32 @@ function parseSOAPResponse(xmlString: string): any {
   const level2 = unescapeXml(level1)
 
   const programs: any[] = []
+  let debugXmlSample = ''
+
+  // Look for Adjustments at the top level (outside of RateOptions)
+  const globalAdjustments: any[] = []
+  const globalAdjRegex = /<Adjustment\s([^>]*)\/?>/gi
+  let globalAdjMatch
+  const tempXml = level2
+  while ((globalAdjMatch = globalAdjRegex.exec(tempXml)) !== null) {
+    const adjAttrs = globalAdjMatch[1]
+    globalAdjustments.push({
+      description: getAttr(adjAttrs, 'Description') || getAttr(adjAttrs, 'Name') || getAttr(adjAttrs, 'Desc'),
+      amount: parseFloat(getAttr(adjAttrs, 'Amount')) || parseFloat(getAttr(adjAttrs, 'Price')) || parseFloat(getAttr(adjAttrs, 'PriceAdj')) || 0,
+      rateAdj: parseFloat(getAttr(adjAttrs, 'RateAdj')) || parseFloat(getAttr(adjAttrs, 'Rate')) || 0,
+    })
+  }
 
   const programRegex = /<Program\s([^>]+)>([\s\S]*?)<\/Program>/gi
   let programMatch
   while ((programMatch = programRegex.exec(level2)) !== null) {
     const progAttrs = programMatch[1]
     const progBody = programMatch[2]
+
+    // Capture first program's body for debug
+    if (!debugXmlSample && progBody) {
+      debugXmlSample = progBody.substring(0, 2000)
+    }
 
     const programName = getAttr(progAttrs, 'Name')
     const status = getAttr(progAttrs, 'Status')
@@ -230,6 +250,19 @@ function parseSOAPResponse(xmlString: string): any {
     const parPoints = getAttr(progAttrs, 'ParPoints')
     const investor = getAttr(progAttrs, 'ProductType')
     const lockDays = getAttr(progAttrs, 'sProdRLckdDays')
+
+    // Parse adjustments at the Program level (outside RateOptions)
+    const programAdjustments: any[] = []
+    const progAdjRegex = /<Adjustment\s([^>]*)\/?>/gi
+    let progAdjMatch
+    while ((progAdjMatch = progAdjRegex.exec(progBody)) !== null) {
+      const adjAttrs = progAdjMatch[1]
+      programAdjustments.push({
+        description: getAttr(adjAttrs, 'Description') || getAttr(adjAttrs, 'Name') || getAttr(adjAttrs, 'Desc'),
+        amount: parseFloat(getAttr(adjAttrs, 'Amount')) || parseFloat(getAttr(adjAttrs, 'Price')) || parseFloat(getAttr(adjAttrs, 'PriceAdj')) || 0,
+        rateAdj: parseFloat(getAttr(adjAttrs, 'RateAdj')) || parseFloat(getAttr(adjAttrs, 'Rate')) || 0,
+      })
+    }
 
     const rateOptions: any[] = []
     // Match RateOption with potential nested content (adjustments)
@@ -292,6 +325,7 @@ function parseSOAPResponse(xmlString: string): any {
         totalClosingCost: bestOption.totalClosingCost,
         cashToClose: bestOption.cashToClose,
         rateOptions,
+        adjustments: programAdjustments.length > 0 ? programAdjustments : undefined,
       })
     }
   }
@@ -303,7 +337,12 @@ function parseSOAPResponse(xmlString: string): any {
     return a.rate - b.rate
   })
 
-  return { programs, totalPrograms: programs.length }
+  return {
+    programs,
+    totalPrograms: programs.length,
+    globalAdjustments: globalAdjustments.length > 0 ? globalAdjustments : undefined,
+    debugXmlSample,
+  }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -421,6 +460,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         programs: eligiblePrograms,
         totalPrograms: eligiblePrograms.length,
         source: 'meridianlink',
+        globalAdjustments: result.globalAdjustments,
+        debugXmlSample: result.debugXmlSample,
       },
     })
   } catch (error) {
