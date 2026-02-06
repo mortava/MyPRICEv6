@@ -332,13 +332,10 @@ export default function App() {
       if (field === 'loanType' && value === 'dscr') {
         updated.documentationType = 'dscr'
       }
-      // DSCR Income Doc Type: Auto-default occupancy to Investment
+      // DSCR Income Doc Type: Auto-default occupancy to Investment (but keep loanType as nonqm)
       if (field === 'documentationType' && value === 'dscr') {
         updated.occupancyType = 'investment'
-        // Also sync loanType if not already dscr
-        if (prev.loanType !== 'dscr') {
-          updated.loanType = 'dscr'
-        }
+        // Keep loanType as nonqm - don't change it
       }
       return updated
     })

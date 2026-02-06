@@ -1,0 +1,224 @@
+{
+  "d": {
+    // ──────────────── TOP-LEVEL FLAGS ────────────────
+    "showPrice": "True",
+    "IsTotalIncomeZero": "True",
+    "PricingResultsDidRunFirstAmerican": "True",
+    "HasDuplicate": "False",
+    "IsPricing2ndLoan": "False",
+    "Is8020PricingScenario": "False" //ignore,
+    "CanAutoLock": "False" //ignore,
+    "RegisterFailedConditionType": "-1" //ignore,
+    "LockFailedConditionType": "2" //ignore,
+    "show2ndLienLink": "False" //ignore,
+    "showSelectLink": "False" //ignore,
+    "showLockRateLink": "True" //ignore,
+    "showLockUnavailable": "False" //ignore,
+    "showRegisterLoanLink": "True" //ignore,
+    "showLockUnavailableExpired": "False" //ignore,
+    "showRegisterLoanLinkExpired": "False" //ignore,
+    "DenialReasons": [] //*List if applicable,
+    "RegisterDenialReasons": [] //ignore,
+    "LockDenialReasons": ["Cannot lock Lead files."] //ignore,
+
+    // ──────────────── PRICING RESULTS ────────────────
+    "PricingResults": {
+      "HasAtLeastOneOptimizedRates": false,
+      "DidRunFirstAmerican": true //ignore,
+
+      // ═══════════ ELIGIBLE GROUPS (the main results table) ═══════════
+      "EligibleGroups": [
+        {
+          "GroupName": "30 YR FIXED NONCONFORMING",        // Section header
+          "ParRate": "DataAccess.QmParRate",
+          "HasAtLeastOneOptimizedRates": false,
+          "ResultLoanPrograms": [],
+          "ResultRateOptions": [                            // Each row in the table
+            {
+              // ── CORE DISPLAY FIELDS (map to table columns) ──
+              "Rate": "6.875",
+              "RawRate": "6.875",
+              "Price": "99.875" // Create Logic Min Price 99.000 Max Pice 101.000,
+              "Payment": "3,941.57",
+              "Dti": "" // Ignore on DSCR,
+              "MaxDti": "N/A" //ignore on DSCR,
+              "IsViolateMaxDti": false //ignore,
+              "Apr": "6.948",
+              "QmMode": "2" //ignore,                               // QM indicator
+              "HpmMode": "1" //ignore,                              // HPM indicator
+              "ClosingCosts": "$8,414.95" //ignore,
+              "CashToClose": "" //ignore,
+              "Reserves": "101.1" //ignore,                         // Reserve months
+              "LpTemplateNm": "30 YR FIXED NONCONFORMING 0MO PPP (SLATE DSCR)",
+
+              // ── PROGRAM IDENTITY ──
+              "LpTemplateId": "b210031d-a7af-40a7-ae3e-31290928c9a0",
+              "LpInvestorNm": "DEEPHAVEN" // Ignore,
+              "ProductCode": "NON-QM",
+              "RateOptionId": "6.875,-3.650" //display rate based on selected PPP year or best priced rate and rebate option,
+              "ProgramStatus": "Eval_Eligible",
+
+              // ── RATE FLAGS ──
+              "IsRateExpired": true //ignore,
+              "TeaserRate": "" //ignore,
+              "Point": "0.125" //ignore,
+              "TotalPriceAdj": null,
+              "Margin": "0.000" //ignore,
+              "BankedAmount": "0.00" //ignore,
+              "BreakEvenMonths": "N/A" //ignore,
+              "QualRate": "" //ignore,
+              "QualPmt": "$3,941.57",
+              "MonthlyMiPayment": "$0.00" //ignore,
+              "MiDenied": "" //ignore,
+              "UseLiveMi": "" //ignore,
+              "BottomRatio": null //ignore,
+
+              // ── LOCK/REGISTRATION ──
+              "IsBlockedRateLockSubmission": true //ignore,
+              "RateLockSubmissionUserWarningMessage": "..." //ignore,
+              "RateLockSubmissionUserWarningMessageRaw": "CUTOFF::03:20 PM PST" //ignore,
+              "Version": "2/5/2026 5:54:04 PM" //ignore,
+              "UniqueChecksum": "7fn9iIRQGb3f...",
+              "IsEligibleForAutoLock": true //ignore,
+
+              // ── STATUS FLAGS ── // SHOW IF PROGRAM DOES NOT QUASALIFY BASED ON USER FORM FIELD INPUTS AND API RESPONSE
+              "DisqualReason": null //ignore,
+              "IsDisqualified": false //ignore,
+              "IsHistorical": false //ignore,
+              "IsCurrent": false //ignore,
+              "IsPaired": false //ignore,
+              "IsWorse": false //ignore,
+              "IsEqual": false //ignore,
+              "PinId": null //ignore,
+              "IsAdriaImprovedScenario": false //ignore,
+              "AdriaAuditInfoJsonContent": null //ignore,
+              "LockedExpiredDate": null //ignore,
+              "LockedExpiredInDays": 0 //ignore,
+
+              // ── NESTED ARRAYS ── //ignore
+              "WorseRates": []//ignore,
+              "TrueBestOption": null //ignore,
+              "BetterDtiViolatingRates": [] //ignore,
+
+              // ── SETTLEMENT / COST BREAKDOWN (s-prefixed) ──
+              "sTransNetCashNonNegative": "$0.00" //ignore,
+              "sPurchPrice": "$0.00" //ignore,
+              "sAltCost": "$0.00" //ignore,
+              "sLandCost": "$0.00" //ignore,
+              "sRefPdOffAmt1003": "$0.00" //ignore,
+              "sTotEstPp1003": "$4,864.50" //ignore,
+              "sTotEstCcNoDiscnt1003": "$2,800.45" //ignore,
+              "sFfUfmip1003": "$0.00" //ignore,
+              "sLDiscnt1003": "$750.00" //ignore,
+              "sTotTransC": "$8,414.95" //ignore,
+              "sONewFinBal": "$0.00" //ignore,
+              "sTotCcPbs": "$0.00" //ignore,
+              "sOCredit1Desc": "" //ignore,
+              "sOCredit1Amt": "$0.00" //ignore,
+              "sOCredit2Desc": "" //ignore,
+              "sOCredit2Amt": "$0.00" //ignore,
+              "sOCredit3Desc": "" //ignore,
+              "sOCredit3Amt": "$0.00" //ignore,
+              "sOCredit4Desc": "" //ignore,
+              "sOCredit4Amt": "$0.00" //ignore,
+              "sOCredit5Amt": "$0.00" //ignore,
+              "sONewFinCc": "$0.00" //ignore,
+              "sONewFinCcInverted": "$0.00" //ignore,
+              "sTotLiquidAssets": "$500,000.00" //ignore,
+              "sLAmtCalc": "$600,000.00",
+              "sFfUfmipFinanced": "$0.00" //ignore,
+              "sFinalLAmt": "$600,000.00" //ignore,
+              "sTransNetCash": "($591,585.05)" //ignore,
+              "sIsIncludeProrationsIn1003Details": false //ignore,
+              "sIsIncludeProrationsInTotPp": true //ignore,
+              "sTotEstPp": "$4,864.50" //ignore,
+              "sTotalBorrowerPaidProrations": "$0.00 //ignore",
+              "sIsIncludeONewFinCcInTotEstCc": true //ignore,
+              "sTotEstCcNoDiscnt": "$2,800.45" //ignore,
+              "sMonthlyPmt": "3941.57",
+              "PrepaidCharges": "$4,864.50" //ignore,
+              "NonPrepaidCharges": "$3,550.45" //ignore,
+              "sAltCostLckd": false //ignore,
+              "sLandIfAcquiredSeparately1003": "$0.00" //ignore,
+              "sLDiscnt1003Lckd": false //ignore,
+              "sPurchasePrice1003": "$0.00" //ignore,
+              "sRefNotTransMortgageBalancePayoffAmt": "$0.00" //ignore,
+              "sRefTransMortgageBalancePayoffAmt": "$0.00" //ignore,
+              "sSellerCreditsUlad": "$0.00" //ignore,
+              "sTotCcPbsLocked": false //ignore,
+              "sTotCreditsUlad": "$0.00" //ignore,
+              "sTotEstBorrCostUlad": "$7,664.95" //ignore,
+              "sTotEstCc1003Lckd": false //ignore,
+              "sTotEstPp1003Lckd": false //ignore,
+              "sTotMortLAmtUlad": "$600,000.00" //ignore,
+              "sTotMortLTotCreditUlad": "$600,000.00" //ignore,
+              "sTotOtherCreditsUlad": "$0.00" //ignore,
+              "sTotTransCUlad": "$8,414.95" //ignore,
+              "sTransNetCashUlad": "($591,585.05)" //ignore,
+              "sTRIDSellerCredits": "$0.00" //ignore,
+
+              // ── CLOSING COST BREAKDOWN (array of line items) ── //ignore
+              "ClosingCostBreakdown": [
+                {
+                  "Amount": "$2,000.00" //ignore,
+                  "Description": "Property Taxes Reserves" //ignore,
+                  "Section": "G" //ignore,
+                  "Source": "Fee Service" //ignore
+                },
+                {
+                  "Amount": "$850.00" //ignore,
+                  "Description": "Appraisal fee" //ignore,
+                  "Section": "B" //ignore,
+                  "Source": "Fee Service" //ignore
+                }
+                // ... up to 13 line items per rate option
+              ]
+            }
+            // ... more ResultRateOptions (one per rate row)
+          ]
+        }
+        // ... more EligibleGroups (one per program section)
+      ],
+
+      // ═══════════ INSUFFICIENT GROUPS ═══════════ //ignore
+      "InsufficientGroups": [] //ignore,
+
+      // ═══════════ INELIGIBLE GROUPS ═══════════ //ignore
+      "IneligibleGroups": [
+        {
+          "GroupName": "30 YR FIXED NONCONFORMING",
+          "ResultRateOptions": null,
+          "ParRate": null,
+          "HasAtLeastOneOptimizedRates": false,
+          "ResultLoanPrograms": [
+            {
+              "lLpTemplateId": "33464e05-...",
+              "lLpTemplateNm": "SLATE - 10yr I/O 30/20",
+              "lLpInvestorNm": "DEEPHAVEN" // NEVER SHOW INVESTOT NAME,
+              "ProductCode": "NON-QM",
+              "MaxDti": "55.000%",
+              "Version": "2/5/2026 5:54:04 PM",
+              "UniqueChecksum": "..." //ignore,
+              "AreRatesExpired": true,
+              "IsHistoric": false,
+              "MergeGroupName": "30 YR FIXED NONCONFORMING",
+              "IsBlockedRateLockSubmission": true,
+              "RateLockSubmissionUserWarningMessage": "..." //ignore,
+              "ProductId": "00000000-0000-0000-0000-000000000000",
+              "IsEligibleForAutoLock": false //ignore,
+              "HasAtLeastOneOptimizedRates": false //ignore,
+              "DisqualifiedRuleList": [
+                " *  *  * INELIGIBLE DOC TYPE" //ignore do not check for,
+                " * * $2,500 RESIDUAL INCOME REQUIRED//ignore"
+              ],
+              "InsufficientInfoList": [] //ignore,
+              "RepresentativeRateOption": null //ignore,
+              "RepresentativeHistoricRateOption": null //ignore,
+              "ResultRateOptions": null //ignore
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

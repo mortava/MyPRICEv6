@@ -367,7 +367,7 @@ function parseSOAPResponse(xmlString: string): any {
         rate: parseFloat(getAttr(rAttrs, 'Rate')) || 0,
         points: parseFloat(getAttr(rAttrs, 'Point')) || 0,
         apr: parseFloat(getAttr(rAttrs, 'APR')) || 0,
-        payment: parseFloat(getAttr(rAttrs, 'Payment')) || 0,
+        payment: parseFloat(getAttr(rAttrs, 'Payment').replace(/,/g, '')) || 0,
         description: getAttr(rAttrs, 'Description'),
         investor: getAttr(rAttrs, 'lLpInvestorNm'),
         status: getAttr(rAttrs, 'Status'),
