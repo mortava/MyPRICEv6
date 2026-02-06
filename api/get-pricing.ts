@@ -176,6 +176,7 @@ function buildLOXmlFormat(formData: any): string {
     <field id="sTotalRenovationCosts">0</field>
     <field id="sProdImpound">${formData.impoundType === 'escrowed'}</field>
     <field id="sImpoundTPe">${formData.impoundType === 'escrowed' ? 2 : 0}</field>
+    <field id="aProdEscrowWaiver">${formData.impoundType === 'noescrow'}</field>
     <field id="sProdRLckdDays">${lockDays}</field>
     <field id="sCreditScoreEstimatePe">${formData.creditScore || 740}</field>
     <field id="aBTotalScoreIsFthbQP">${formData.isFTHB || false}</field>
@@ -516,7 +517,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
-    // Strip irrelevant adjustments based on loan scenario
+    // Strip irrelevant adjustments and rewrite DSCR descriptions
+    const actualDSCRValue = isDSCRRequest && formData.dscrValue ? parseFloat(formData.dscrValue).toFixed(3) : null
+    const actualDSCRTier = isDSCRRequest ? (formData.dscrRatio || null) : null
+
     eligiblePrograms.forEach((p: any) => {
       if (!p.rateOptions) return
       p.rateOptions.forEach((ro: any) => {
@@ -528,6 +532,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Strip CASHOUT adjustments when loan purpose is rate/term refi
           if (formData.loanPurpose === 'refinance' && desc.includes('CASHOUT')) return false
           return true
+        }).map((adj: any) => {
+          // Rewrite DSCR adjustment descriptions to show actual DSCR ratio
+          // Lender may only have one DSCR tier (e.g., "DSCR >= 1.25") regardless of actual ratio
+          if (isDSCRRequest && actualDSCRValue && (adj.description || '').toUpperCase().includes('DSCR')) {
+            let newDesc = adj.description
+            // Replace "DSCR: DSCR >= 1.25" with "DSCR: 1.000 (1.00-1.149)"
+            newDesc = newDesc.replace(
+              /DSCR:\s*DSCR\s*>=?\s*[\d.]+/i,
+              `DSCR: ${actualDSCRValue} (${actualDSCRTier || 'N/A'})`
+            )
+            return { ...adj, description: newDesc }
+          }
+          return adj
         })
       })
     })
@@ -592,6 +609,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               if (!isDSCRRequest && desc.includes('DSCR')) return false
               if (formData.loanPurpose === 'refinance' && desc.includes('CASHOUT')) return false
               return true
+            }).map((adj: any) => {
+              if (isDSCRRequest && actualDSCRValue && (adj.description || '').toUpperCase().includes('DSCR')) {
+                let newDesc = adj.description
+                newDesc = newDesc.replace(
+                  /DSCR:\s*DSCR\s*>=?\s*[\d.]+/i,
+                  `DSCR: ${actualDSCRValue} (${actualDSCRTier || 'N/A'})`
+                )
+                return { ...adj, description: newDesc }
+              }
+              return adj
             })
           : result.globalAdjustments,
         debugXmlSample: result.debugXmlSample,
