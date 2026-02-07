@@ -577,6 +577,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           isInvestment,
           occupancyType: formData.occupancyType,
           eligibleCount: result.programs.filter((p: any) => p.status === 'Eligible').length,
+          debugXmlSample: result.debugXmlSample,
         }
       })
     }
