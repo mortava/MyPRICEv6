@@ -47,8 +47,8 @@ function mapLoanPurpose(purpose: string): number {
 }
 
 function mapOccupancy(occupancy: string): number {
-  const map: Record<string, number> = { primary: 1, secondary: 2, investment: 3 }
-  return map[occupancy] || 1
+  const map: Record<string, number> = { primary: 0, secondary: 1, investment: 2 }
+  return map[occupancy] ?? 0
 }
 
 function mapPropertyType(type: string): number {
@@ -177,7 +177,7 @@ function buildLOXmlFormat(formData: any): string {
     <field id="sSpZip">${escapeXml(formData.propertyZip || '')}</field>
     <field id="sSpStatePe">${escapeXml(formData.propertyState || 'CA')}</field>
     <field id="sSpCounty">${escapeXml(formData.propertyCounty || '')}</field>
-    <field id="sOccTPe">${isDSCR ? 3 : mapOccupancy(formData.occupancyType || 'primary')}</field>
+    <field id="sOccTPe">${isDSCR ? 2 : mapOccupancy(formData.occupancyType || 'primary')}</field>
     <field id="sProdSpT">${mapPropertyType(formData.propertyType || 'sfr')}</field>
     <field id="sProdIsSpInRuralArea">${formData.isRuralProperty || false}</field>
     <field id="sProdIsNonwarrantableProj">${formData.isNonWarrantableProject || false}</field>
@@ -195,6 +195,8 @@ function buildLOXmlFormat(formData: any): string {
     <field id="sIncomeDocumentationType">${mapIncomeDocType(isDSCR ? 'dscr' : docType)}</field>
     ${isDSCR ? `<field id="aDSCR %">${mapDSCRRatio(formData.dscrRatio)}</field>` : ''}
     ${isDSCR ? `<field id="aOccupancyRate">100</field>` : ''}
+    ${!isDSCR ? `<field id="sPrimAppTotNonspIPe">200000</field>` : ''}
+    <field id="sAppTotLiqAsset">5000000</field>
     <field id="sProdFilterPrepayNone">true</field>
     <field id="sProdFilterPrepayHasPPP">${includePPP}</field>
     <field id="sProdFilterInclNoPPP">true</field>
