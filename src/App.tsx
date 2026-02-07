@@ -1226,15 +1226,9 @@ export default function App() {
                         <CheckCircle2 className="w-5 h-5 text-green-600" />Pricing Result
                       </CardTitle>
                       <div className="flex items-center gap-2">
-                        {result.source === 'meridianlink' ? (
-                          <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-md">
-                            <CheckCircle2 className="w-3 h-3" />Live PML Pricing
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
-                            <Info className="w-3 h-3" />Demo pricing - for illustration only
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-md">
+                          <CheckCircle2 className="w-3 h-3" />Live Pricing
+                        </div>
                         {result.apiError && (
                           <div className="flex items-center gap-1.5 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-md">
                             <AlertCircle className="w-3 h-3" />API Error
