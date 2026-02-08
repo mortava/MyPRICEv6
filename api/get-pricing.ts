@@ -42,8 +42,8 @@ function mapLoanPurpose(purpose: string): number {
   // MeridianLink sLPurposeTPe: 1=Purchase, 2=Refinance (all types)
   // This lender's Non-QM config uses code 2 for both rate/term and cash-out refinance.
   // Cash-out vs rate/term adjustments are stripped client-side based on user selection.
-  const map: Record<string, number> = { purchase: 1, refinance: 2, cashout: 2 }
-  return map[purpose] || 1
+  const map: Record<string, number> = { purchase: 0, refinance: 2, cashout: 2 }
+  return map[purpose] || 0
 }
 
 function mapOccupancy(occupancy: string): number {
