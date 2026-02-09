@@ -1,0 +1,16 @@
+API Responses Captured:
+When you click the "Get Price" button, the following API requests are triggered:
+1. GET Request (Exception Buyers)
+
+URL: https://nexapi.loannex.com/users/3d444bbc-4395-ef11-8474-000d3a3f21ad/exception-buyers
+Method: GET
+Status Code: 200 (Success)
+
+2. POST Request (Quick Prices)
+
+URL: https://nexapi.loannex.com/loans/apps/3d444bbc-4395-ef11-8474-000d3a3f21ad/quick-prices
+Method: POST
+Status Code: 201 (Created)
+
+The system makes a GET request to fetch exception buyers data and then POSTs the loan application data to get quick prices. Both requests complete successfully, with the quick-prices endpoint returning a 201 status code indicating the pricing request was created.
+The user ID 3d444bbc-4395-ef11-8474-000d3a3f21ad is being used to fetch user-specific pricing data from the LoanNEX API.
