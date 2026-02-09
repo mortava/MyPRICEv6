@@ -412,7 +412,7 @@ function buildBQLQuery(lpPayload: any): string {
     status
     time
   }
-  scrapeResults: evaluate(expression: ${JSON.stringify(jsExpression)}) {
+  scrapeResults: evaluate(content: ${JSON.stringify(jsExpression)}, timeout: 45000) {
     value
   }
 }`
