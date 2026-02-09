@@ -154,7 +154,6 @@ function parseLPApiResponse(apiResponse: any) {
         const apr = leaf.apr || 0
         const totalAdj = leaf.adjustmentPoints || 0
 
-        // Extract adjustment details from borrowerPaidDetails or closingCostDetails
         const adjustments: { description: string; amount: number }[] = []
         if (leaf.borrowerPaidDetails && Array.isArray(leaf.borrowerPaidDetails)) {
           for (const det of leaf.borrowerPaidDetails) {
@@ -196,226 +195,142 @@ function parseLPApiResponse(apiResponse: any) {
   return Array.from(byRate.values()).sort((a, b) => a.rate - b.rate)
 }
 
-// ================= BQL Query Builder =================
-function buildBQLQuery(lpPayload: any): string {
-  const payloadJson = JSON.stringify(lpPayload).replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-
-  // JavaScript that runs in the page context after flex loads:
-  // 1. Waits for the app to authenticate
-  // 2. Intercepts fetch to capture auth token
-  // 3. Makes direct API call with captured token
-  // 4. Falls back to extracting token from storage
-  const jsExpression = `
-(async function() {
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-  // Accept cookies if banner appears
-  try {
-    var btns = document.querySelectorAll('button, a');
-    for (var b of btns) {
-      var t = (b.textContent || '').toLowerCase().trim();
-      if (t.includes('accept') || t.includes('agree') || t === 'ok' || t.includes('got it') || t.includes('consent')) {
-        b.click(); break;
-      }
-    }
-  } catch(e) {}
-
-  await sleep(2000);
-
-  // Strategy 1: Check localStorage/sessionStorage for token
-  var token = null;
-  try {
-    for (var i = 0; i < localStorage.length; i++) {
-      var k = localStorage.key(i);
-      var v = localStorage.getItem(k);
-      if (v && v.length > 20 && v.length < 5000) {
-        try {
-          var parsed = JSON.parse(v);
-          if (parsed.access_token) { token = parsed.access_token; break; }
-          if (parsed.token) { token = parsed.token; break; }
-        } catch(e2) {
-          if (k.toLowerCase().includes('token') || k.toLowerCase().includes('auth')) {
-            token = v; break;
-          }
-        }
-      }
-    }
-    if (!token) {
-      for (var j = 0; j < sessionStorage.length; j++) {
-        var sk = sessionStorage.key(j);
-        var sv = sessionStorage.getItem(sk);
-        if (sv && sv.length > 20 && sv.length < 5000) {
-          try {
-            var parsed2 = JSON.parse(sv);
-            if (parsed2.access_token) { token = parsed2.access_token; break; }
-            if (parsed2.token) { token = parsed2.token; break; }
-          } catch(e3) {
-            if (sk.toLowerCase().includes('token') || sk.toLowerCase().includes('auth')) {
-              token = sv; break;
-            }
-          }
-        }
-      }
-    }
-  } catch(e) {}
-
-  // Strategy 2: Intercept any ongoing XHR that has Authorization header
-  if (!token) {
-    try {
-      var perfEntries = performance.getEntriesByType('resource');
-      // Look for auth-related requests that might reveal the token pattern
-    } catch(e) {}
-  }
-
-  // Strategy 3: Try to find token in Angular app state
-  if (!token) {
-    try {
-      // Check for ngrx store or Angular services
-      var appRoot = document.querySelector('app-root, [ng-version]');
-      if (appRoot && appRoot.__ngContext__) {
-        // Try to navigate Angular's internal structures
-        var ctx = appRoot.__ngContext__;
-        if (Array.isArray(ctx)) {
-          for (var ci = 0; ci < ctx.length; ci++) {
-            var item = ctx[ci];
-            if (item && typeof item === 'object' && item.access_token) {
-              token = item.access_token;
-              break;
-            }
-          }
-        }
-      }
-    } catch(e) {}
-  }
-
-  // Strategy 4: Override fetch and wait for any API call that reveals the token
-  if (!token) {
-    var capturedToken = null;
-    var origFetch = window.fetch;
-    window.fetch = async function() {
-      var args = arguments;
-      var resp = await origFetch.apply(this, args);
-      try {
-        var url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url ? args[0].url : '');
-        if (url.includes('oauth/token') || url.includes('/auth')) {
-          var clone = resp.clone();
-          var data = await clone.json();
-          if (data.access_token) capturedToken = data.access_token;
-        }
-      } catch(e) {}
-      return resp;
-    };
-
-    // Also check XHR
-    var origXhrOpen = XMLHttpRequest.prototype.open;
-    var origXhrSetHeader = XMLHttpRequest.prototype.setRequestHeader;
-    XMLHttpRequest.prototype.setRequestHeader = function(name, value) {
-      if (name.toLowerCase() === 'authorization' && value.startsWith('Bearer ')) {
-        capturedToken = value.replace('Bearer ', '');
-      }
-      return origXhrSetHeader.apply(this, arguments);
-    };
-
-    // Wait and check
-    for (var w = 0; w < 10; w++) {
-      await sleep(1000);
-      if (capturedToken) { token = capturedToken; break; }
-    }
-
-    // Restore
-    window.fetch = origFetch;
-    XMLHttpRequest.prototype.open = origXhrOpen;
-    XMLHttpRequest.prototype.setRequestHeader = origXhrSetHeader;
-  }
-
-  // Collect debug info
-  var debugInfo = {
-    tokenFound: !!token,
-    tokenLength: token ? token.length : 0,
-    localStorageKeys: [],
-    sessionStorageKeys: [],
-  };
-  try {
-    for (var di = 0; di < localStorage.length; di++) debugInfo.localStorageKeys.push(localStorage.key(di));
-    for (var dj = 0; dj < sessionStorage.length; dj++) debugInfo.sessionStorageKeys.push(sessionStorage.key(dj));
-  } catch(e) {}
-
-  // If we have a token, make the direct API call
-  if (token) {
-    try {
-      var apiResp = await fetch("${LP_SEARCH_URL}", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
-        },
-        body: '${payloadJson}',
-      });
-      if (apiResp.ok) {
-        var apiData = await apiResp.json();
-        return JSON.stringify({ success: true, method: 'directApi', data: apiData, debug: debugInfo });
-      } else {
-        debugInfo.apiStatus = apiResp.status;
-        debugInfo.apiError = await apiResp.text().catch(function() { return 'unreadable'; });
-      }
-    } catch(e) {
-      debugInfo.apiCallError = e.message;
-    }
-  }
-
-  // Fallback: Try to fill form and capture response via interception
-  var interceptedResponse = null;
-  var origFetch2 = window.fetch;
-  window.fetch = async function() {
-    var args = arguments;
-    var resp = await origFetch2.apply(this, args);
-    try {
-      var url = typeof args[0] === 'string' ? args[0] : '';
-      if (url.includes('/pricing/search')) {
-        var clone = resp.clone();
-        interceptedResponse = await clone.json();
-      }
-    } catch(e) {}
-    return resp;
-  };
-
-  // Try to click search button (form might already have default values)
-  try {
-    var allBtns = document.querySelectorAll('button');
-    for (var bi = 0; bi < allBtns.length; bi++) {
-      var btnText = (allBtns[bi].textContent || '').toLowerCase().trim();
-      if (btnText.includes('search') || btnText.includes('price') || btnText.includes('get rate')) {
-        allBtns[bi].click();
-        break;
-      }
-    }
-  } catch(e) {}
-
-  // Wait for intercepted response
-  for (var ri = 0; ri < 30; ri++) {
-    await sleep(1000);
-    if (interceptedResponse) break;
-  }
-
-  window.fetch = origFetch2;
-
-  if (interceptedResponse) {
-    return JSON.stringify({ success: true, method: 'intercepted', data: interceptedResponse, debug: debugInfo });
-  }
-
-  return JSON.stringify({ success: false, method: 'none', debug: debugInfo });
-})()
-  `.trim()
-
-  return `mutation GetLPPricing {
+// ================= Token Extraction via Browserless =================
+async function extractTokenViaBrowserless(browserlessToken: string): Promise<{ token: string | null; debug: any }> {
+  // Step 1: Use BQL response intercept to capture OAuth token from flex page load
+  const bqlQuery = `mutation CaptureAuth {
   goto(url: "${FLEX_URL}", waitUntil: networkIdle) {
     status
     time
   }
-  scrapeResults: evaluate(content: ${JSON.stringify(jsExpression)}, timeout: 45000) {
+  authResponses: response(url: ["*oauth*", "*token*", "*auth*"], type: xhr, timeout: 5000) {
+    url
+    body
+    status
+  }
+  allXhrResponses: response(type: xhr, timeout: 5000) {
+    url
+    status
+  }
+  tokenFromPage: evaluate(content: ${JSON.stringify(`
+(async function() {
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  await sleep(1000);
+
+  // Check localStorage
+  var token = null;
+  var allKeys = {};
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      var v = localStorage.getItem(k);
+      allKeys['ls_' + k] = v ? v.substring(0, 200) : null;
+      if (v && v.length > 20) {
+        try {
+          var p = JSON.parse(v);
+          if (p.access_token) { token = p.access_token; break; }
+          if (p.token) { token = p.token; break; }
+        } catch(e) {}
+      }
+    }
+    for (var j = 0; j < sessionStorage.length; j++) {
+      var sk = sessionStorage.key(j);
+      var sv = sessionStorage.getItem(sk);
+      allKeys['ss_' + sk] = sv ? sv.substring(0, 200) : null;
+      if (sv && sv.length > 20) {
+        try {
+          var p2 = JSON.parse(sv);
+          if (p2.access_token) { token = p2.access_token; break; }
+          if (p2.token) { token = p2.token; break; }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {}
+
+  // Check cookies
+  var cookies = document.cookie || '';
+
+  return JSON.stringify({
+    token: token,
+    storageKeys: allKeys,
+    cookies: cookies.substring(0, 500),
+    url: window.location.href,
+    title: document.title,
+  });
+})()
+  `)}, timeout: 10000) {
     value
   }
 }`
+
+  const resp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: bqlQuery }),
+    signal: AbortSignal.timeout(30000),
+  })
+
+  if (!resp.ok) {
+    return { token: null, debug: { error: `BQL HTTP ${resp.status}` } }
+  }
+
+  const bqlResult = await resp.json()
+
+  // Check for BQL errors
+  if (bqlResult.errors) {
+    return { token: null, debug: { bqlErrors: bqlResult.errors } }
+  }
+
+  let token: string | null = null
+  const debug: any = {
+    gotoStatus: bqlResult.data?.goto?.status,
+    gotoTime: bqlResult.data?.goto?.time,
+  }
+
+  // Try to find token in auth responses
+  const authResponses = bqlResult.data?.authResponses || []
+  debug.authResponseCount = authResponses.length
+  debug.authResponseUrls = authResponses.map((r: any) => r.url)
+
+  for (const authResp of authResponses) {
+    if (authResp.body) {
+      try {
+        const body = typeof authResp.body === 'string' ? JSON.parse(authResp.body) : authResp.body
+        if (body.access_token) {
+          token = body.access_token
+          break
+        }
+      } catch {
+        // Check if body itself is the token
+        if (typeof authResp.body === 'string' && authResp.body.length > 20 && authResp.body.length < 2000) {
+          debug.rawAuthBody = authResp.body.substring(0, 200)
+        }
+      }
+    }
+  }
+
+  // Also log all XHR URLs for debugging
+  const allXhr = bqlResult.data?.allXhrResponses || []
+  debug.xhrCount = allXhr.length
+  debug.xhrUrls = allXhr.map((r: any) => r.url).slice(0, 20)
+
+  // Try to get token from page evaluate
+  if (!token) {
+    const pageValue = bqlResult.data?.tokenFromPage?.value
+    if (pageValue) {
+      try {
+        const pageData = typeof pageValue === 'string' ? JSON.parse(pageValue) : pageValue
+        if (pageData.token) {
+          token = pageData.token
+        }
+        debug.pageData = pageData
+      } catch {
+        debug.rawPageValue = String(pageValue).substring(0, 500)
+      }
+    }
+  }
+
+  return { token, debug }
 }
 
 // ================= Main Handler =================
@@ -435,70 +350,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const formData = req.body
-    const lpPayload = buildLPPayload(formData)
-    const bqlQuery = buildBQLQuery(lpPayload)
 
-    const bqlResponse = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
+    // Step 1: Extract auth token via Browserless
+    const { token, debug: tokenDebug } = await extractTokenViaBrowserless(browserlessToken)
+
+    if (!token) {
+      return res.json({
+        success: true,
+        data: {
+          source: 'lenderprice',
+          rateOptions: [],
+          totalRates: 0,
+          debug: tokenDebug,
+        },
+      })
+    }
+
+    // Step 2: Build LP API payload and call directly
+    const lpPayload = buildLPPayload(formData)
+
+    const apiResponse = await fetch(LP_SEARCH_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: bqlQuery }),
-      signal: AbortSignal.timeout(55000),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Origin': 'https://flex.digitallending.com',
+      },
+      body: JSON.stringify(lpPayload),
+      signal: AbortSignal.timeout(20000),
     })
 
-    if (!bqlResponse.ok) {
-      const errText = await bqlResponse.text().catch(() => '')
-      console.error('Browserless error:', bqlResponse.status, errText.substring(0, 500))
-      return res.json({ success: false, error: `LP engine unavailable (${bqlResponse.status})` })
-    }
-
-    const bqlResult = await bqlResponse.json()
-    const rawValue = bqlResult?.data?.scrapeResults?.value
-
-    if (!rawValue) {
+    if (!apiResponse.ok) {
+      const errBody = await apiResponse.text().catch(() => '')
       return res.json({
         success: true,
         data: {
           source: 'lenderprice',
           rateOptions: [],
           totalRates: 0,
-          debug: {
-            bqlKeys: Object.keys(bqlResult?.data || {}),
-            bqlErrors: bqlResult?.errors,
-            gotoStatus: bqlResult?.data?.goto?.status,
-          },
+          debug: { ...tokenDebug, apiStatus: apiResponse.status, apiError: errBody.substring(0, 500) },
         },
       })
     }
 
-    let parsed: any
-    try {
-      parsed = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue
-    } catch {
-      console.error('Failed to parse BQL result:', String(rawValue).substring(0, 500))
-      return res.json({
-        success: true,
-        data: { source: 'lenderprice', rateOptions: [], totalRates: 0 },
-      })
-    }
+    const apiData = await apiResponse.json()
 
-    if (!parsed.success || !parsed.data) {
-      return res.json({
-        success: true,
-        data: {
-          source: 'lenderprice',
-          rateOptions: [],
-          totalRates: 0,
-          method: parsed.method || 'none',
-          debug: parsed.debug,
-        },
-      })
-    }
-
-    // Parse the LP API response tree into flat rate options
-    const rateOptions = parseLPApiResponse(parsed.data)
-
-    // Include summary of raw data for debugging if no rates parsed
-    const rawPrograms = parsed.data?.results?.programs || []
+    // Step 3: Parse the LP response tree
+    const rateOptions = parseLPApiResponse(apiData)
+    const rawPrograms = apiData?.results?.programs || []
 
     return res.json({
       success: true,
@@ -506,20 +405,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         source: 'lenderprice',
         rateOptions,
         totalRates: rateOptions.length,
-        method: parsed.method,
+        method: 'directApi',
         debug: rateOptions.length === 0 ? {
-          ...parsed.debug,
-          hasResults: !!parsed.data?.results,
-          qualifiedQMKeys: parsed.data?.results?.qualifiedQMData ? Object.keys(parsed.data.results.qualifiedQMData) : [],
-          qualifiedNonQMKeys: parsed.data?.results?.qualifiedNonQMData ? Object.keys(parsed.data.results.qualifiedNonQMData) : [],
+          ...tokenDebug,
+          hasResults: !!apiData?.results,
+          qualifiedQMKeys: apiData?.results?.qualifiedQMData ? Object.keys(apiData.results.qualifiedQMData) : [],
+          qualifiedNonQMKeys: apiData?.results?.qualifiedNonQMData ? Object.keys(apiData.results.qualifiedNonQMData) : [],
           programNames: rawPrograms.slice(0, 5),
-          rawResponseKeys: Object.keys(parsed.data || {}),
         } : undefined,
       },
     })
   } catch (error) {
     console.error('LP pricing error:', error)
-    // Silently fail - MeridianLink results still work
     return res.json({
       success: false,
       error: error instanceof Error ? error.message : 'LP pricing unavailable',
