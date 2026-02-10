@@ -1581,7 +1581,7 @@ export default function App() {
                   })
                   .map((opt: any) => ({
                     ...opt,
-                    price: safeNumber(opt.price) - 0.50,
+                    price: safeNumber(opt.price) - 0.125,
                   }))
                 const filteredLpRates = adjustedLpRates.filter(
                   (opt: any) => opt.price >= 99.75 && opt.price <= priceCeiling
