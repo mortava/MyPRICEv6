@@ -157,8 +157,23 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
   var bodyText = (document.body.innerText || '').substring(0, 500);
   diag.steps.push('body_preview: ' + bodyText.substring(0, 200));
 
+  // Capture doc type SELECT options before filling
+  var docTypeEl = document.getElementById('${FIELD_IDS.docType}');
+  if (docTypeEl && docTypeEl.tagName === 'SELECT') {
+    var opts = [];
+    for (var oi = 0; oi < docTypeEl.options.length; oi++) {
+      opts.push(docTypeEl.options[oi].text);
+    }
+    diag.docTypeOptions = opts;
+  }
+
   ${fieldSets.join('\\n  ')}
   ${checkboxSets.join('\\n  ')}
+
+  // Verify the docType was set correctly
+  if (docTypeEl) {
+    diag.steps.push('docType_after_set: ' + docTypeEl.value + ' | selectedText: ' + (docTypeEl.selectedOptions ? docTypeEl.selectedOptions[0]?.text : 'N/A'));
+  }
 
   await sleep(500);
   diag.steps.push('fields_set');
