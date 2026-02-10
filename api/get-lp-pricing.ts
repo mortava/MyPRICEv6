@@ -175,18 +175,37 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
   searchBtn.click();
   diag.steps.push('search_clicked');
 
-  // Wait for results (up to 15s)
-  await sleep(12000);
+  // Poll for results table (check every 2s, up to 20s)
+  var foundTable = false;
+  for (var attempt = 0; attempt < 10; attempt++) {
+    await sleep(2000);
+    var checkTables = document.querySelectorAll('table');
+    var checkRows = document.querySelectorAll('tr');
+    if (checkRows.length > 0) {
+      diag.steps.push('results_found_at: ' + ((attempt + 1) * 2) + 's (' + checkRows.length + ' rows)');
+      foundTable = true;
+      break;
+    }
+    // Also check for loading spinner or "No results" text
+    var bodySnap = (document.body.innerText || '');
+    if (bodySnap.indexOf('No results') >= 0 || bodySnap.indexOf('No eligible') >= 0) {
+      diag.steps.push('no_results_text_at: ' + ((attempt + 1) * 2) + 's');
+      break;
+    }
+  }
 
-  // Diagnostic: check page state after wait
-  var pageText2 = (document.body.innerText || '');
-  diag.steps.push('post_search_preview: ' + pageText2.substring(0, 300));
+  if (!foundTable) {
+    diag.steps.push('no_table_after_20s');
+    // Capture page state for debugging
+    var pageText2 = (document.body.innerText || '');
+    diag.steps.push('final_page: ' + pageText2.substring(0, 400));
+  }
 
-  // Count all table rows
+  // Extra settle time after table appears
+  if (foundTable) await sleep(1000);
+
   var allRows = document.querySelectorAll('tr');
   diag.steps.push('total_tr_elements: ' + allRows.length);
-
-  // Check for any tables at all
   var allTables = document.querySelectorAll('table');
   diag.steps.push('total_tables: ' + allTables.length);
 
