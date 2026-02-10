@@ -120,9 +120,12 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
 
   return `(async function() {
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  var diag = { steps: [], fieldResults: {} };
+
   function setVal(id, val) {
     var el = document.getElementById(id);
-    if (!el) return;
+    if (!el) { diag.fieldResults[id] = 'NOT_FOUND'; return; }
+    diag.fieldResults[id] = { tag: el.tagName, found: true };
     var s = el.tagName === 'SELECT'
       ? Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
       : Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
@@ -133,22 +136,47 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
   function setCheckbox(id, checked) {
     var el = document.getElementById(id);
     if (el && el.checked !== checked) { el.click(); }
+    diag.fieldResults[id] = el ? 'checkbox_set' : 'NOT_FOUND';
   }
+
+  diag.steps.push('page_url: ' + window.location.href);
+  diag.steps.push('title: ' + document.title);
 
   await sleep(3000);
 
-  ${fieldSets.join('\n  ')}
-  ${checkboxSets.join('\n  ')}
+  // Check if page loaded (cookie consent, login wall, etc.)
+  var bodyText = (document.body.innerText || '').substring(0, 500);
+  diag.steps.push('body_preview: ' + bodyText.substring(0, 200));
+
+  ${fieldSets.join('\\n  ')}
+  ${checkboxSets.join('\\n  ')}
 
   await sleep(500);
+  diag.steps.push('fields_set');
 
   // Click Search
   var searchBtn = document.querySelector('button.btn-primary');
-  if (!searchBtn) return JSON.stringify({ error: 'no search button' });
+  var allBtns = document.querySelectorAll('button');
+  diag.steps.push('buttons_found: ' + allBtns.length);
+  diag.steps.push('search_btn: ' + (searchBtn ? searchBtn.textContent.trim() : 'NOT_FOUND'));
+  if (!searchBtn) return JSON.stringify({ error: 'no search button', diag: diag });
   searchBtn.click();
+  diag.steps.push('search_clicked');
 
   // Wait for results (up to 15s)
   await sleep(12000);
+
+  // Diagnostic: check page state after wait
+  var pageText2 = (document.body.innerText || '');
+  diag.steps.push('post_search_preview: ' + pageText2.substring(0, 300));
+
+  // Count all table rows
+  var allRows = document.querySelectorAll('tr');
+  diag.steps.push('total_tr_elements: ' + allRows.length);
+
+  // Check for any tables at all
+  var allTables = document.querySelectorAll('table');
+  diag.steps.push('total_tables: ' + allTables.length);
 
   // Extract rate data from table
   function getData(cell) {
@@ -158,10 +186,12 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
 
   var rows = document.querySelectorAll('tr');
   var rates = [];
-  for (var i = 0; i < rows.length; i++) {
+  var debugRows = [];
+  for (var i = 0; i < rows.length && i < 50; i++) {
     var cells = rows[i].querySelectorAll('td');
     if (cells.length < 5) continue;
     var rateText = (cells[0].textContent || '').trim();
+    debugRows.push({ cellCount: cells.length, cell0: rateText.substring(0, 30) });
     var rateMatch = rateText.match(/([\\d.]+)\\s*%/);
     if (!rateMatch) continue;
     rates.push({
@@ -172,6 +202,8 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
     });
   }
 
+  diag.debugRows = debugRows.slice(0, 5);
+
   // Get eligible counts
   var pageText = document.body.innerText || '';
   var qmMatch = pageText.match(/Eligible QM \\((\\d+)\\)/);
@@ -181,7 +213,8 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
     rateCount: rates.length,
     eligibleQM: qmMatch ? parseInt(qmMatch[1]) : 0,
     eligibleNonQM: nonQmMatch ? parseInt(nonQmMatch[1]) : 0,
-    rates: rates
+    rates: rates,
+    diag: diag
   });
 })()`
 }
@@ -287,6 +320,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           rawRatesLength: (scraped.rates || []).length,
           firstRawRate: (scraped.rates || [])[0] || null,
           parsedCount: rateOptions.length,
+          diag: scraped.diag || null,
         },
       },
     })
