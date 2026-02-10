@@ -225,7 +225,7 @@ const DEFAULT_FORM_DATA: LoanData = {
   cashoutAmount: '',
   loanAmount: '600,000',
   propertyValue: '800,000',
-  propertyZip: '90120',
+  propertyZip: '90210',
   propertyState: 'CA',
   propertyCounty: 'Los Angeles',
   propertyCity: 'Beverly Hills',
