@@ -272,14 +272,13 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
     if (!rateMatch) continue;
     rates.push({
       rate: parseFloat(rateMatch[1]),
+      lender: (cells[1] ? (cells[1].textContent || '').trim() : ''),
       price: getData(cells[2]),
       payment: getData(cells[3]),
-      apr: getData(cells[4]),
-      program: (cells[5] ? (cells[5].textContent || '').trim() : ''),
-      status: (cells[6] ? (cells[6].textContent || '').trim() : ''),
-      investor: (cells[7] ? (cells[7].textContent || '').trim() : ''),
-      priceAdj: getData(cells[9]),
-      rateAdj: getData(cells[10])
+      costToBorrower: getData(cells[4]),
+      lenderFee: getData(cells[6]),
+      program: (cells[7] ? (cells[7].textContent || '').trim() : ''),
+      priceAdj: getData(cells[9])
     });
   }
 
@@ -308,18 +307,17 @@ function parseScrapedRates(rawRates: any[]): any[] {
       const priceStr = String(r.price).replace(/[^0-9.-]/g, '')
       const paymentStr = String(r.payment).replace(/[^0-9.-]/g, '')
       const adjStr = String(r.priceAdj).replace(/[^0-9.-]/g, '')
-      const aprStr = String(r.apr || '').replace(/[^0-9.-]/g, '')
-      const rateAdjStr = String(r.rateAdj || '').replace(/[^0-9.-]/g, '')
+      const costStr = String(r.costToBorrower || '').replace(/[^0-9.-]/g, '')
+      const feeStr = String(r.lenderFee || '').replace(/[^0-9.-]/g, '')
       return {
         rate: r.rate,
         price: parseFloat(priceStr) || 0,
         payment: parseFloat(paymentStr) || 0,
-        apr: parseFloat(aprStr) || 0,
         program: r.program || '',
-        status: r.status || '',
-        investor: r.investor || '',
+        lender: r.lender || '',
+        costToBorrower: parseFloat(costStr) || 0,
+        lenderFee: parseFloat(feeStr) || 0,
         totalAdjustments: parseFloat(adjStr) || 0,
-        rateAdjustments: parseFloat(rateAdjStr) || 0,
       }
     })
     .sort((a: any, b: any) => a.rate - b.rate)

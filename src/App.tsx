@@ -1594,10 +1594,11 @@ export default function App() {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="text-gray-500 border-b">
-                                <th className="text-right py-2 px-3">Rate</th>
-                                <th className="text-right py-2 px-3">Price</th>
-                                <th className="text-right py-2 px-3">Mo. Payment</th>
-                                <th className="text-right py-2 px-3">Price Adj.</th>
+                                <th className="text-right py-2 px-2">Rate</th>
+                                <th className="text-right py-2 px-2">Price</th>
+                                <th className="text-right py-2 px-2">Payment</th>
+                                <th className="text-left py-2 px-2">Program</th>
+                                <th className="text-right py-2 px-2">Price Adj.</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1605,16 +1606,19 @@ export default function App() {
                                 const isClosest = Math.abs(opt.price - 100) === closestPrice
                                 return (
                                   <tr key={idx} className={`border-t ${isClosest ? 'bg-blue-50 font-medium' : ''}`}>
-                                    <td className="py-2 px-3 text-right font-semibold text-primary">
+                                    <td className="py-2 px-2 text-right font-semibold text-primary">
                                       {safeNumber(opt.rate).toFixed(3)}%
                                     </td>
-                                    <td className={`py-2 px-3 text-right ${opt.price >= 100 ? 'text-green-600 font-medium' : ''}`}>
+                                    <td className={`py-2 px-2 text-right ${opt.price >= 100 ? 'text-green-600 font-medium' : ''}`}>
                                       {safeNumber(opt.price).toFixed(3)}
                                     </td>
-                                    <td className="py-2 px-3 text-right">
+                                    <td className="py-2 px-2 text-right">
                                       {opt.payment > 0 ? formatCurrency(safeNumber(opt.payment)) : '-'}
                                     </td>
-                                    <td className="py-2 px-3 text-right">
+                                    <td className="py-2 px-2 text-left text-xs text-gray-500 truncate max-w-[180px]" title={opt.program}>
+                                      {opt.program || '-'}
+                                    </td>
+                                    <td className="py-2 px-2 text-right">
                                       {opt.totalAdjustments !== 0 ? (
                                         <span className={opt.totalAdjustments > 0 ? 'text-red-600' : 'text-green-600'}>
                                           {opt.totalAdjustments > 0 ? '+' : ''}{safeNumber(opt.totalAdjustments).toFixed(3)}
