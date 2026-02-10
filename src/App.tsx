@@ -1563,28 +1563,40 @@ export default function App() {
               )}
 
               {lpResult && lpResult.rateOptions && lpResult.rateOptions.length > 0 && (() => {
-                const isDSCR = formData.documentationType === 'dscr'
+                const isInvestment = formData.occupancyType === 'investment'
+                // Parse prepay months from form value (e.g., "36mo" → 36)
+                const prepayMonths = parseInt(formData.prepayPeriod) || 0
+                // Price ceiling: ≤2yr prepay → 100.000, >2yr → 101.000
+                const priceCeiling = prepayMonths <= 24 ? 100.000 : 101.000
                 // Apply -0.50 price adjustment to all LP rates before display
-                const adjustedLpRates = lpResult.rateOptions.map((opt: any) => ({
-                  ...opt,
-                  price: safeNumber(opt.price) - 0.50,
-                }))
-                // DSCR: show all rates (all PPP options) — no price filter
-                // Non-DSCR: filter to 99.75-100.75 price range
-                const filteredLpRates = isDSCR
-                  ? adjustedLpRates
-                  : adjustedLpRates.filter((opt: any) => opt.price >= 99.75 && opt.price <= 100.75)
+                const adjustedLpRates = lpResult.rateOptions
+                  .filter((opt: any) => {
+                    // Filter out Conforming programs
+                    const prog = String(opt.program || '').toUpperCase()
+                    return !prog.includes('CONF')
+                  })
+                  .map((opt: any) => ({
+                    ...opt,
+                    price: safeNumber(opt.price) - 0.50,
+                  }))
+                // Filter: bottom at 99.75, top at price ceiling
+                const filteredLpRates = adjustedLpRates.filter(
+                  (opt: any) => opt.price >= 99.75 && opt.price <= priceCeiling
+                )
                 const closestPrice = filteredLpRates.length > 0
                   ? Math.min(...filteredLpRates.map((o: any) => Math.abs(o.price - 100)))
                   : 999
+                // Build header label with prepay info for Investment
+                const prepayLabel = isInvestment && prepayMonths > 0
+                  ? ` - ${prepayMonths} Month Prepay`
+                  : ''
                 return (
                   <Card className="mt-4 border-indigo-200 bg-indigo-50/30">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center justify-between">
-                        <span>Expanded Market Rates</span>
+                        <span>Expanded Market Rates{prepayLabel}</span>
                         <span className="text-xs font-normal text-gray-400">
                           {filteredLpRates.length} of {adjustedLpRates.length} rates
-                          {lpResult.eligibleQM > 0 && ` | ${lpResult.eligibleQM} QM`}
                           {lpResult.eligibleNonQM > 0 && ` | ${lpResult.eligibleNonQM} Non-QM`}
                         </span>
                       </CardTitle>

@@ -96,6 +96,7 @@ function mapFormValues(formData: any) {
     interestOnly: formData.paymentType === 'io',
     selfEmployed: !!formData.isSelfEmployed,
     isDSCR,
+    isInvestment: formData.occupancyType === 'investment',
     prepayTerm: prepayMap[formData.prepayPeriod] || 'None',
     prepayPlanType: prepayTypeMap[formData.prepayType] || '5% Fixed',
   }
@@ -125,9 +126,9 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
     fieldSets.push(`setVal('${FIELD_IDS.dscrRatio}', '${values.dscrRatio}');`)
   }
 
-  // Prepay term (dynamic field — appears after setting Investment/DSCR)
+  // Prepay term (dynamic field — appears after setting Investment occupancy)
   // Set after a sleep so the DOM has time to render dynamic fields
-  if (values.isDSCR) {
+  if (values.isInvestment) {
     fieldSets.push(`await sleep(500);`)
     fieldSets.push(`setVal('${FIELD_IDS.prepayTerm}', '${values.prepayTerm}');`)
     // Prepay plan type (dynamic — appears after setting prepayTerm to non-None value)
