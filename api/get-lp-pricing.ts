@@ -21,6 +21,10 @@ const FIELD_IDS = {
   waiveImpounds: '63ac9dfb44b1dfb7238cbd36',
   interestOnly: '6471198a1808b2759c7290f3',
   selfEmployed: '6219b8a850cbb98496384300',
+  // Dynamic fields (appear after DSCR/Investment selection)
+  prepayTerm: '691667834a1a0960d1e67588',
+  shortTermRental: '688a8c972c7c7a45f870c4e5',
+  firstTimeInvestor: '64062719bcd1bf2ef39bb120',
 }
 
 // ================= Form Value Mappings =================
@@ -61,6 +65,13 @@ function mapFormValues(formData: any) {
 
   const isDSCR = formData.documentationType === 'dscr'
 
+  // Map prepay period: form sends "60mo","48mo","36mo","24mo","12mo","0mo"
+  // Flex pricer expects: "None","12 Months","24 Months","36 Months","48 Months","60 Months"
+  const prepayMap: Record<string, string> = {
+    '60mo': '60 Months', '48mo': '48 Months', '36mo': '36 Months',
+    '24mo': '24 Months', '12mo': '12 Months', '0mo': 'None',
+  }
+
   return {
     fico: String(Number(formData.creditScore) || 740),
     citizenship: citizenMap[formData.citizenship] || 'US Citizen',
@@ -79,6 +90,7 @@ function mapFormValues(formData: any) {
     interestOnly: formData.paymentType === 'io',
     selfEmployed: !!formData.isSelfEmployed,
     isDSCR,
+    prepayTerm: prepayMap[formData.prepayPeriod] || 'None',
   }
 }
 
@@ -104,6 +116,13 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
 
   if (values.isDSCR && values.dscrRatio) {
     fieldSets.push(`setVal('${FIELD_IDS.dscrRatio}', '${values.dscrRatio}');`)
+  }
+
+  // Prepay term (dynamic field — appears after setting Investment/DSCR)
+  // Set after a sleep so the DOM has time to render dynamic fields
+  if (values.isDSCR && values.prepayTerm) {
+    fieldSets.push(`await sleep(500);`)
+    fieldSets.push(`setVal('${FIELD_IDS.prepayTerm}', '${values.prepayTerm}');`)
   }
 
   // Handle checkboxes
