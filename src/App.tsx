@@ -244,7 +244,7 @@ const DEFAULT_FORM_DATA: LoanData = {
   product: 'conventional',
   paymentType: 'pi',
   impoundType: 'escrowed',
-  prepayPeriod: '3year',
+  prepayPeriod: '36mo',
   prepayType: '5pct',
   dscrEntityType: 'individual',
   dscrRatio: '1.00-1.149',
@@ -1091,12 +1091,12 @@ export default function App() {
                           <Select name="prepayPeriod" value={formData.prepayPeriod} onValueChange={(v) => handleInputChange('prepayPeriod', v)}>
                             <SelectTrigger id="prepayPeriod"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="5year">5 Year</SelectItem>
-                              <SelectItem value="4year">4 Year</SelectItem>
-                              <SelectItem value="3year">3 Year</SelectItem>
-                              <SelectItem value="2year">2 Year</SelectItem>
-                              <SelectItem value="1year">1 Year</SelectItem>
-                              <SelectItem value="0year">0 Year</SelectItem>
+                              <SelectItem value="60mo">60 Months</SelectItem>
+                              <SelectItem value="48mo">48 Months</SelectItem>
+                              <SelectItem value="36mo">36 Months</SelectItem>
+                              <SelectItem value="24mo">24 Months</SelectItem>
+                              <SelectItem value="12mo">12 Months</SelectItem>
+                              <SelectItem value="0mo">None</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
