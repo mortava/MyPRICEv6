@@ -1563,15 +1563,24 @@ export default function App() {
               )}
 
               {lpResult && lpResult.rateOptions && lpResult.rateOptions.length > 0 && (() => {
+                const isDSCR = formData.documentationType === 'dscr'
                 // Apply -0.50 price adjustment to all LP rates before display
                 const adjustedLpRates = lpResult.rateOptions.map((opt: any) => ({
                   ...opt,
                   price: safeNumber(opt.price) - 0.50,
                 }))
-                const filteredLpRates = adjustedLpRates.filter((opt: any) => opt.price >= 99.0 && opt.price <= 101.0)
+                // DSCR: show all rates grouped by program (all PPP options)
+                // Non-DSCR: filter to 99.75-100.75 price range
+                const filteredLpRates = isDSCR
+                  ? adjustedLpRates
+                  : adjustedLpRates.filter((opt: any) => opt.price >= 99.75 && opt.price <= 100.75)
                 const closestPrice = filteredLpRates.length > 0
                   ? Math.min(...filteredLpRates.map((o: any) => Math.abs(o.price - 100)))
                   : 999
+                // Group by program for DSCR
+                const programGroups = isDSCR
+                  ? [...new Set(filteredLpRates.map((o: any) => o.program || 'Unknown'))].sort()
+                  : []
                 return (
                   <Card className="mt-4 border-indigo-200 bg-indigo-50/30">
                     <CardHeader className="pb-2">
@@ -1586,46 +1595,103 @@ export default function App() {
                     </CardHeader>
                     <CardContent>
                       {filteredLpRates.length > 0 ? (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="text-gray-500 border-b">
-                                <th className="text-right py-2 px-3">Rate</th>
-                                <th className="text-right py-2 px-3">Price</th>
-                                <th className="text-right py-2 px-3">Payment</th>
-                                <th className="text-right py-2 px-3">Price Adj.</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredLpRates.map((opt: any, idx: number) => {
-                                const isClosest = Math.abs(opt.price - 100) === closestPrice
-                                return (
-                                  <tr key={idx} className={`border-t ${isClosest ? 'bg-blue-50 font-medium' : ''}`}>
-                                    <td className="py-2 px-3 text-right font-semibold text-primary">
-                                      {safeNumber(opt.rate).toFixed(3)}%
-                                    </td>
-                                    <td className={`py-2 px-3 text-right ${opt.price >= 100 ? 'text-green-600 font-medium' : ''}`}>
-                                      {safeNumber(opt.price).toFixed(3)}
-                                    </td>
-                                    <td className="py-2 px-3 text-right">
-                                      {opt.payment > 0 ? formatCurrency(safeNumber(opt.payment)) : '-'}
-                                    </td>
-                                    <td className="py-2 px-3 text-right">
-                                      {opt.totalAdjustments !== 0 ? (
-                                        <span className={opt.totalAdjustments > 0 ? 'text-red-600' : 'text-green-600'}>
-                                          {opt.totalAdjustments > 0 ? '+' : ''}{safeNumber(opt.totalAdjustments).toFixed(3)}
-                                        </span>
-                                      ) : '-'}
-                                    </td>
-                                  </tr>
-                                )
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
+                        isDSCR ? (
+                          /* DSCR: grouped by program with all PPP options */
+                          <div className="space-y-4">
+                            {programGroups.map((prog: string) => {
+                              const groupRates = filteredLpRates.filter((o: any) => (o.program || 'Unknown') === prog)
+                              const groupFiltered = groupRates.filter((o: any) => o.price >= 99.75 && o.price <= 100.75)
+                              const displayRates = groupFiltered.length > 0 ? groupFiltered : groupRates.slice(0, 5)
+                              const groupClosest = displayRates.length > 0
+                                ? Math.min(...displayRates.map((o: any) => Math.abs(o.price - 100)))
+                                : 999
+                              return (
+                                <div key={prog}>
+                                  <p className="text-xs font-medium text-indigo-600 mb-1">{prog} ({groupRates.length} rates)</p>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                      <thead>
+                                        <tr className="text-gray-500 border-b">
+                                          <th className="text-right py-1 px-3">Rate</th>
+                                          <th className="text-right py-1 px-3">Price</th>
+                                          <th className="text-right py-1 px-3">Payment</th>
+                                          <th className="text-right py-1 px-3">Price Adj.</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {displayRates.map((opt: any, idx: number) => {
+                                          const isClosest = Math.abs(opt.price - 100) === groupClosest
+                                          return (
+                                            <tr key={idx} className={`border-t ${isClosest ? 'bg-blue-50 font-medium' : ''}`}>
+                                              <td className="py-1.5 px-3 text-right font-semibold text-primary">
+                                                {safeNumber(opt.rate).toFixed(3)}%
+                                              </td>
+                                              <td className={`py-1.5 px-3 text-right ${opt.price >= 100 ? 'text-green-600 font-medium' : ''}`}>
+                                                {safeNumber(opt.price).toFixed(3)}
+                                              </td>
+                                              <td className="py-1.5 px-3 text-right">
+                                                {opt.payment > 0 ? formatCurrency(safeNumber(opt.payment)) : '-'}
+                                              </td>
+                                              <td className="py-1.5 px-3 text-right">
+                                                {opt.totalAdjustments !== 0 ? (
+                                                  <span className={opt.totalAdjustments > 0 ? 'text-red-600' : 'text-green-600'}>
+                                                    {opt.totalAdjustments > 0 ? '+' : ''}{safeNumber(opt.totalAdjustments).toFixed(3)}
+                                                  </span>
+                                                ) : '-'}
+                                              </td>
+                                            </tr>
+                                          )
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          /* Non-DSCR: single flat table, 99.75-100.75 */
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-gray-500 border-b">
+                                  <th className="text-right py-2 px-3">Rate</th>
+                                  <th className="text-right py-2 px-3">Price</th>
+                                  <th className="text-right py-2 px-3">Payment</th>
+                                  <th className="text-right py-2 px-3">Price Adj.</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {filteredLpRates.map((opt: any, idx: number) => {
+                                  const isClosest = Math.abs(opt.price - 100) === closestPrice
+                                  return (
+                                    <tr key={idx} className={`border-t ${isClosest ? 'bg-blue-50 font-medium' : ''}`}>
+                                      <td className="py-2 px-3 text-right font-semibold text-primary">
+                                        {safeNumber(opt.rate).toFixed(3)}%
+                                      </td>
+                                      <td className={`py-2 px-3 text-right ${opt.price >= 100 ? 'text-green-600 font-medium' : ''}`}>
+                                        {safeNumber(opt.price).toFixed(3)}
+                                      </td>
+                                      <td className="py-2 px-3 text-right">
+                                        {opt.payment > 0 ? formatCurrency(safeNumber(opt.payment)) : '-'}
+                                      </td>
+                                      <td className="py-2 px-3 text-right">
+                                        {opt.totalAdjustments !== 0 ? (
+                                          <span className={opt.totalAdjustments > 0 ? 'text-red-600' : 'text-green-600'}>
+                                            {opt.totalAdjustments > 0 ? '+' : ''}{safeNumber(opt.totalAdjustments).toFixed(3)}
+                                          </span>
+                                        ) : '-'}
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )
                       ) : (
                         <p className="text-sm text-gray-400 text-center py-2">
-                          {adjustedLpRates.length} rates returned, none in 99-101 price range
+                          {adjustedLpRates.length} rates returned, none in price range
                         </p>
                       )}
                     </CardContent>
