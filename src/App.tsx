@@ -513,18 +513,25 @@ export default function App() {
     }
 
     // LP runs independently in background — results appear when ready
+    const lpBody = JSON.stringify(requestBody)
     fetch('/api/get-lp-pricing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      body: lpBody,
     })
-      .then(r => r.json())
+      .then(r => {
+        console.log('[LP] Response status:', r.status)
+        return r.json()
+      })
       .then(lpData => {
+        console.log('[LP] Data received:', lpData.success, 'rates:', lpData.data?.rateOptions?.length || 0)
         if (lpData.success && lpData.data) {
           setLpResult(lpData.data)
+        } else {
+          console.log('[LP] No data:', JSON.stringify(lpData).substring(0, 500))
         }
       })
-      .catch(() => {})
+      .catch(err => console.error('[LP] Error:', err))
       .finally(() => setLpLoading(false))
   }
 
