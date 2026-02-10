@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calculator, DollarSign, Loader2, CheckCircle2, AlertCircle, Info, ChevronDown, ChevronUp, Menu, X, ExternalLink } from 'lucide-react'
+import { Calculator, DollarSign, Loader2, CheckCircle2, AlertCircle, Info, ChevronDown, ChevronUp, Menu, X, ExternalLink, Zap, Globe, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -1552,11 +1552,19 @@ export default function App() {
 
               {/* EXPANDED MARKET RATES - Lender Price (above Submit button) */}
               {lpLoading && !lpResult && (
-                <Card className="mt-4 border-gray-200">
-                  <CardContent className="py-6">
-                    <div className="flex items-center justify-center gap-3 text-gray-500">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm">Fetching expanded market rates...</span>
+                <Card className="mt-6 border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
+                  <CardContent className="py-8">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <div className="relative">
+                        <Globe className="w-8 h-8 text-cyan-400 animate-pulse" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping" />
+                      </div>
+                      <span className="text-sm text-slate-300 font-medium tracking-wide">Scanning national wholesale pricing engines...</span>
+                      <div className="flex gap-1 mt-1">
+                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1564,14 +1572,10 @@ export default function App() {
 
               {lpResult && lpResult.rateOptions && lpResult.rateOptions.length > 0 && (() => {
                 const isInvestment = formData.occupancyType === 'investment'
-                // Parse prepay months from form value (e.g., "36mo" → 36)
                 const prepayMonths = parseInt(formData.prepayPeriod) || 0
-                // Price ceiling: ≤2yr prepay → 100.000, >2yr → 101.000
                 const priceCeiling = prepayMonths <= 24 ? 100.000 : 101.000
-                // Apply -0.50 price adjustment to all LP rates before display
                 const adjustedLpRates = lpResult.rateOptions
                   .filter((opt: any) => {
-                    // Filter out Conforming programs (but keep NonConforming/NonQM)
                     const prog = String(opt.program || '').toUpperCase()
                     return !(prog.includes('CONF') && !prog.includes('NONCONF'))
                   })
@@ -1579,60 +1583,77 @@ export default function App() {
                     ...opt,
                     price: safeNumber(opt.price) - 0.50,
                   }))
-                // Filter: bottom at 99.75, top at price ceiling
                 const filteredLpRates = adjustedLpRates.filter(
                   (opt: any) => opt.price >= 99.75 && opt.price <= priceCeiling
                 )
                 const closestPrice = filteredLpRates.length > 0
                   ? Math.min(...filteredLpRates.map((o: any) => Math.abs(o.price - 100)))
                   : 999
-                // Build header label with prepay info for Investment
                 const prepayLabel = isInvestment && prepayMonths > 0
                   ? ` - ${prepayMonths} Month Prepay`
                   : ''
                 return (
-                  <Card className="mt-4 border-indigo-200 bg-indigo-50/30">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center justify-between">
-                        <span>Expanded Market Rates{prepayLabel}</span>
-                        <span className="text-xs font-normal text-gray-400">
-                          {filteredLpRates.length} of {adjustedLpRates.length} rates
-                          {lpResult.eligibleNonQM > 0 && ` | ${lpResult.eligibleNonQM} Non-QM`}
-                        </span>
-                      </CardTitle>
+                  <Card className="mt-6 border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden relative">
+                    {/* Subtle grid pattern overlay */}
+                    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+                    <CardHeader className="pb-3 relative z-10">
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/30">
+                            <Zap className="w-4 h-4 text-cyan-400" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base font-semibold text-white tracking-tight">
+                              AI Reviewed - National Wholesale Rate Results{prepayLabel}
+                            </CardTitle>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 text-[11px] text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-full font-medium">
+                            <ShieldCheck className="w-3 h-3" />Verified
+                          </div>
+                          <span className="text-[11px] font-mono text-slate-400">
+                            {filteredLpRates.length} rates
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5">
+                        <Globe className="w-3 h-3 text-cyan-500/60" />
+                        We just checked all of the Industry Leading Pricing Engines for you.
+                      </p>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative z-10">
                       {filteredLpRates.length > 0 ? (
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto rounded-lg border border-slate-700/80 bg-slate-800/50">
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="text-gray-500 border-b">
-                                <th className="text-right py-2 px-3">Rate</th>
-                                <th className="text-right py-2 px-3">Price</th>
-                                <th className="text-right py-2 px-3">Payment</th>
-                                <th className="text-right py-2 px-3">Price Adj.</th>
+                              <tr className="border-b border-slate-700">
+                                <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Rate</th>
+                                <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Price</th>
+                                <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Payment</th>
+                                <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Price Adj.</th>
                               </tr>
                             </thead>
                             <tbody>
                               {filteredLpRates.map((opt: any, idx: number) => {
                                 const isClosest = Math.abs(opt.price - 100) === closestPrice
                                 return (
-                                  <tr key={idx} className={`border-t ${isClosest ? 'bg-blue-50 font-medium' : ''}`}>
-                                    <td className="py-2 px-3 text-right font-semibold text-primary">
+                                  <tr key={idx} className={`border-t border-slate-700/60 transition-colors ${isClosest ? 'bg-cyan-500/10' : 'hover:bg-slate-700/30'}`}>
+                                    <td className="py-2.5 px-4 text-right font-semibold text-cyan-300 font-mono">
                                       {safeNumber(opt.rate).toFixed(3)}%
                                     </td>
-                                    <td className={`py-2 px-3 text-right ${opt.price >= 100 ? 'text-green-600 font-medium' : ''}`}>
+                                    <td className={`py-2.5 px-4 text-right font-mono ${opt.price >= 100 ? 'text-emerald-400 font-semibold' : 'text-slate-300'}`}>
                                       {safeNumber(opt.price).toFixed(3)}
                                     </td>
-                                    <td className="py-2 px-3 text-right">
+                                    <td className="py-2.5 px-4 text-right text-slate-300 font-mono">
                                       {opt.payment > 0 ? formatCurrency(safeNumber(opt.payment)) : '-'}
                                     </td>
-                                    <td className="py-2 px-3 text-right">
+                                    <td className="py-2.5 px-4 text-right font-mono">
                                       {opt.totalAdjustments !== 0 ? (
-                                        <span className={opt.totalAdjustments > 0 ? 'text-red-600' : 'text-green-600'}>
+                                        <span className={opt.totalAdjustments > 0 ? 'text-red-400' : 'text-emerald-400'}>
                                           {opt.totalAdjustments > 0 ? '+' : ''}{safeNumber(opt.totalAdjustments).toFixed(3)}
                                         </span>
-                                      ) : '-'}
+                                      ) : <span className="text-slate-500">-</span>}
                                     </td>
                                   </tr>
                                 )
@@ -1641,7 +1662,7 @@ export default function App() {
                           </table>
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-400 text-center py-2">
+                        <p className="text-sm text-slate-400 text-center py-3">
                           {adjustedLpRates.length} rates returned, none in price range
                         </p>
                       )}
@@ -1651,11 +1672,14 @@ export default function App() {
               })()}
 
               {!lpLoading && lpResult && (!lpResult.rateOptions || lpResult.rateOptions.length === 0) && (
-                <Card className="mt-4 border-gray-200">
-                  <CardContent className="py-4">
-                    <p className="text-sm text-gray-400 text-center">
-                      No expanded market rates available for this scenario
-                    </p>
+                <Card className="mt-6 border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+                  <CardContent className="py-6">
+                    <div className="flex flex-col items-center gap-2">
+                      <Globe className="w-5 h-5 text-slate-500" />
+                      <p className="text-sm text-slate-400 text-center">
+                        No national wholesale rates available for this scenario
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               )}
