@@ -142,9 +142,21 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
   diag.steps.push('page_url: ' + window.location.href);
   diag.steps.push('title: ' + document.title);
 
-  await sleep(3000);
+  await sleep(2000);
 
-  // Check if page loaded (cookie consent, login wall, etc.)
+  // Dismiss cookie consent banner if present
+  var cookieBtns = document.querySelectorAll('button');
+  for (var cb = 0; cb < cookieBtns.length; cb++) {
+    var btnText = (cookieBtns[cb].textContent || '').trim().toLowerCase();
+    if (btnText === 'allow cookies' || btnText === 'accept' || btnText === 'accept all') {
+      cookieBtns[cb].click();
+      diag.steps.push('cookie_dismissed: ' + btnText);
+      break;
+    }
+  }
+  await sleep(1500);
+
+  // Check if page loaded
   var bodyText = (document.body.innerText || '').substring(0, 500);
   diag.steps.push('body_preview: ' + bodyText.substring(0, 200));
 
