@@ -289,6 +289,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const formData = req.body
     const values = mapFormValues(formData)
+    console.log('[LP] Mapped values:', JSON.stringify(values))
+    console.log('[LP] Raw form data keys:', Object.keys(formData).join(', '))
     const evalScript = buildEvaluateScript(values)
 
     const bqlQuery = `mutation ScrapeRates {
@@ -347,6 +349,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         eligibleQM: scraped.eligibleQM || 0,
         eligibleNonQM: scraped.eligibleNonQM || 0,
         debug: {
+          mappedValues: values,
           rawRateCount: scraped.rateCount,
           rawRatesLength: (scraped.rates || []).length,
           firstRawRate: (scraped.rates || [])[0] || null,
