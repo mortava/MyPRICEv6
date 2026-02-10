@@ -157,6 +157,27 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
   var bodyText = (document.body.innerText || '').substring(0, 500);
   diag.steps.push('body_preview: ' + bodyText.substring(0, 200));
 
+  // Discover ALL form fields (selects + inputs with labels)
+  var allSelects = document.querySelectorAll('select');
+  var allInputs = document.querySelectorAll('input');
+  var formFields = [];
+  for (var si = 0; si < allSelects.length; si++) {
+    var sel = allSelects[si];
+    var label = sel.previousElementSibling ? (sel.previousElementSibling.textContent || '').trim() : '';
+    if (!label) { var par = sel.parentElement; label = par ? (par.querySelector('label') || {}).textContent || '' : ''; }
+    var selOpts = [];
+    for (var so = 0; so < sel.options.length && so < 15; so++) { selOpts.push(sel.options[so].text); }
+    formFields.push({ tag: 'SELECT', id: sel.id, label: label.substring(0, 40), value: sel.value, options: selOpts });
+  }
+  for (var ii = 0; ii < allInputs.length; ii++) {
+    var inp = allInputs[ii];
+    if (inp.type === 'hidden') continue;
+    var ilabel = inp.previousElementSibling ? (inp.previousElementSibling.textContent || '').trim() : '';
+    if (!ilabel) { var ipar = inp.parentElement; ilabel = ipar ? (ipar.querySelector('label') || {}).textContent || '' : ''; }
+    formFields.push({ tag: 'INPUT', id: inp.id, type: inp.type, label: ilabel.substring(0, 40), value: (inp.value || '').substring(0, 30) });
+  }
+  diag.formFields = formFields;
+
   // Capture doc type SELECT options before filling
   var docTypeEl = document.getElementById('${FIELD_IDS.docType}');
   if (docTypeEl && docTypeEl.tagName === 'SELECT') {
