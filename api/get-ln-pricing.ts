@@ -328,71 +328,60 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 2. Then a second BQL call to the Angular app URL (same token works standalone)
     const waitScript = `(async function() { await new Promise(r => setTimeout(r, 5000)); return JSON.stringify({ waited: true }); })()`
 
+    // Try to access iframe contents directly (may work if Browserless has relaxed CORS)
+    // If cross-origin blocked, fall back to returning just the iframe URL
     const extractIframeScript = `(async function() {
-  await new Promise(r => setTimeout(r, 2000));
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  await sleep(2000);
   var iframe = document.getElementById('loannex-angular-iframe');
   if (!iframe) return JSON.stringify({ error: 'no iframe', body: (document.body.innerText || '').substring(0, 300) });
-  return JSON.stringify({ iframeUrl: iframe.src });
+  var iframeUrl = iframe.src;
+
+  // Wait for iframe to load
+  await sleep(5000);
+
+  // Try cross-origin access to iframe contents
+  try {
+    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    var iframeBody = (iframeDoc.body.innerText || '').substring(0, 1000);
+    var iframeInputs = iframeDoc.querySelectorAll('input:not([type=hidden]), select, textarea');
+    var fields = [];
+    for (var i = 0; i < iframeInputs.length; i++) {
+      var el = iframeInputs[i];
+      var label = '';
+      var labelEl = el.closest('label') || iframeDoc.querySelector('label[for="' + el.id + '"]');
+      if (labelEl) label = (labelEl.textContent || '').trim();
+      if (!label && el.parentElement) {
+        var sib = el.parentElement.querySelector('label, .label, span');
+        if (sib) label = (sib.textContent || '').trim();
+      }
+      var opts;
+      if (el.tagName === 'SELECT') {
+        opts = [];
+        for (var j = 0; j < el.options.length && j < 15; j++) opts.push({ v: el.options[j].value, t: el.options[j].text });
+      }
+      fields.push({ tag: el.tagName, id: el.id, name: el.name, type: el.type, label: label.substring(0, 50), placeholder: el.placeholder || '', value: (el.value || '').substring(0, 30), options: opts });
+    }
+    return JSON.stringify({ iframeUrl: iframeUrl, crossOrigin: false, iframeBody: iframeBody, fields: fields, fieldCount: fields.length });
+  } catch(e) {
+    return JSON.stringify({ iframeUrl: iframeUrl, crossOrigin: true, error: e.message });
+  }
 })()`
 
-    // Phase 1: Login and extract the Angular app URL (with tokenKey)
-    const phase1Query = `mutation LoginAndExtract {
+    // Single BQL call: login + goto wrapper + extract iframe contents (or URL)
+    bqlQuery = `mutation LoginAndExtract {
   loginPage: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
   login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 8000) { value }
   waitNav: evaluate(content: ${JSON.stringify(waitScript)}, timeout: 8000) { value }
   wrapper: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
-  extract: evaluate(content: ${JSON.stringify(extractIframeScript)}, timeout: 8000) { value }
+  extract: evaluate(content: ${JSON.stringify(extractIframeScript)}, timeout: 20000) { value }
 }`
-
-    const phase1Resp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: phase1Query }),
-      signal: AbortSignal.timeout(30000),
-    })
-
-    if (!phase1Resp.ok) {
-      return res.json({ success: false, error: `Phase 1 HTTP ${phase1Resp.status}` })
-    }
-
-    const phase1Result = await phase1Resp.json()
-    const extractVal = phase1Result.data?.extract?.value
-    const extractData = extractVal ? (typeof extractVal === 'string' ? JSON.parse(extractVal) : extractVal) : null
-    const angularAppUrl = extractData?.iframeUrl
-
-    if (!angularAppUrl) {
-      return res.json({
-        success: false,
-        error: 'Could not extract Angular app URL after login',
-        debug: { phase1Result, extractData }
-      })
-    }
-
-    // Phase 2: Navigate to Angular app (tokenKey-based auth, works in fresh browser)
-    if (isDiscovery) {
-      bqlQuery = `mutation DiscoverApp {
-  app: goto(url: "${angularAppUrl}", waitUntil: load) { status time }
-  waitForApp: evaluate(content: "(async function() { for (var i=0; i<15; i++) { await new Promise(r=>setTimeout(r,1000)); if (document.querySelectorAll('input,select,textarea').length > 2) return JSON.stringify({ready:true,count:document.querySelectorAll('input,select,textarea').length,url:location.href}); } return JSON.stringify({ready:false,url:location.href,body:(document.body.innerText||'').substring(0,500)}); })()", timeout: 20000) { value }
-  discover: evaluate(content: ${JSON.stringify(discoveryScript)}, timeout: 15000) { value }
-}`
-    } else {
-      const formData = req.body || {}
-      const fillScript = buildFormFillScript(formData)
-      const scrapeScript = buildScrapeScript()
-
-      bqlQuery = `mutation PriceApp {
-  app: goto(url: "${angularAppUrl}", waitUntil: load) { status time }
-  waitForApp: evaluate(content: "(async function() { for (var i=0; i<15; i++) { await new Promise(r=>setTimeout(r,1000)); if (document.querySelectorAll('input,select,textarea').length > 2) return JSON.stringify({ready:true}); } return JSON.stringify({ready:false}); })()", timeout: 20000) { value }
-  fill: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 15000) { value }
-  scrape: evaluate(content: ${JSON.stringify(scrapeScript)}, timeout: 30000) { value }
-}`
-    }
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: bqlQuery }),
-      signal: AbortSignal.timeout(55000),
+      signal: AbortSignal.timeout(50000),
     })
 
     if (!bqlResp.ok) {
@@ -421,45 +410,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try { return typeof val === 'string' ? JSON.parse(val) : val } catch { return val }
     }
 
-    const waitAppData = safeParseValue(bqlResult.data?.waitForApp?.value)
-
-    if (isDiscovery) {
-      const discoverData = safeParseValue(bqlResult.data?.discover?.value)
-
-      return res.json({
-        success: true,
-        mode: 'discovery',
-        angularAppUrl,
-        angularReady: waitAppData,
-        discovery: discoverData,
-        debug: { phase2Keys: Object.keys(bqlResult.data || {}), errors: bqlResult.errors || null }
-      })
-    }
-
-    // Full mode - parse fill and scrape results
-    const fillData = safeParseValue(bqlResult.data?.fill?.value)
-    const scrapeData = safeParseValue(bqlResult.data?.scrape?.value)
-
-    const rates = (scrapeData?.rates || []).map((r: any) => ({
-      rate: r.rate,
-      cells: r.cells || [],
-    }))
+    // Parse extract results — may contain iframe contents (if CORS relaxed) or just the URL
+    const loginData = safeParseValue(bqlResult.data?.login?.value)
+    const extractData = safeParseValue(bqlResult.data?.extract?.value)
 
     return res.json({
       success: true,
-      mode: 'full',
-      angularAppUrl,
-      data: {
-        source: 'loannex',
-        rateOptions: rates,
-        totalRates: rates.length,
-        headers: scrapeData?.headers || [],
-      },
-      debug: {
-        angular: waitAppData,
-        fill: fillData,
-        scrape: scrapeData?.diag || null,
-      },
+      mode: isDiscovery ? 'discovery' : 'full',
+      angularAppUrl: extractData?.iframeUrl || null,
+      crossOriginAccess: extractData?.crossOrigin === false,
+      login: loginData,
+      iframeData: extractData,
+      debug: { keys: Object.keys(bqlResult.data || {}), errors: bqlResult.errors || null }
     })
   } catch (error) {
     console.error('LN pricing error:', error)
