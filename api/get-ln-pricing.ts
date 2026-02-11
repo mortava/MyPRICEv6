@@ -471,61 +471,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     btnList.push({ tag: buttons[b].tagName, text: (buttons[b].textContent || '').trim().substring(0, 50), id: buttons[b].id || '', className: (buttons[b].className || '').substring(0, 80) });
   }
 
-  // Capture auth tokens from browser storage
+  // Click hamburger menu to reveal sidebar navigation
+  var toggleBtn = document.getElementById('btnNav');
+  if (toggleBtn) {
+    diag.steps.push('clicking_hamburger_menu');
+    toggleBtn.click();
+    await sleep(2000);
+  }
+
+  // Capture auth token (JWT)
   var authInfo = {};
   try {
-    var ls = {};
-    for (var k = 0; k < localStorage.length; k++) {
-      var key = localStorage.key(k);
-      ls[key] = (localStorage.getItem(key) || '').substring(0, 200);
+    var authResult = localStorage.getItem('authentication-result');
+    if (authResult) {
+      var parsed = JSON.parse(authResult);
+      authInfo.jwt = (parsed.authenticationToken || '').substring(0, 50) + '...';
+      authInfo.jwtFull = parsed.authenticationToken || '';
     }
-    authInfo.localStorage = ls;
-  } catch(e) { authInfo.localStorageError = e.message; }
-  try {
-    var ss = {};
-    for (var k = 0; k < sessionStorage.length; k++) {
-      var key = sessionStorage.key(k);
-      ss[key] = (sessionStorage.getItem(key) || '').substring(0, 200);
-    }
-    authInfo.sessionStorage = ss;
-  } catch(e) { authInfo.sessionStorageError = e.message; }
-  authInfo.cookies = (document.cookie || '').substring(0, 500);
+    authInfo.userGuid = (localStorage.getItem('userGuid') || '').replace(/"/g, '');
+    authInfo.orgGuid = (localStorage.getItem('organizationGuid') || '').replace(/"/g, '');
+  } catch(e) { authInfo.error = e.message; }
 
-  // Try to find Angular routes via router config
-  var routeInfo = [];
-  try {
-    var appRoot = document.querySelector('app-root, [ng-version]');
-    if (appRoot && window.ng) {
-      var comp = window.ng.getComponent(appRoot);
-      if (comp && comp.router && comp.router.config) {
-        for (var ri = 0; ri < comp.router.config.length; ri++) {
-          routeInfo.push(comp.router.config[ri].path || '');
-        }
-      }
-    }
-  } catch(e) { routeInfo = ['router_error: ' + e.message]; }
-
-  // Scan all DOM text for navigation-like words
+  // Scan ALL elements for navigation text after hamburger opened
   var allElements = document.querySelectorAll('*');
-  var navTexts = [];
+  var linkList = [];
   var seenTexts = {};
-  for (var ne = 0; ne < allElements.length && ne < 5000; ne++) {
+  for (var ne = 0; ne < allElements.length && ne < 8000; ne++) {
     var el2 = allElements[ne];
-    if (el2.children.length === 0 || el2.tagName === 'SPAN' || el2.tagName === 'A' || el2.tagName === 'LI') {
+    // Only look at leaf or shallow elements
+    if (el2.children.length <= 2) {
       var t = (el2.textContent || '').trim();
-      if (t.length > 1 && t.length < 40 && !seenTexts[t]) {
-        var tLow = t.toLowerCase();
-        if (tLow.indexOf('pric') >= 0 || tLow.indexOf('quick') >= 0 || tLow.indexOf('scenario') >= 0 || tLow.indexOf('loan') >= 0 || tLow.indexOf('search') >= 0 || tLow.indexOf('menu') >= 0 || tLow.indexOf('home') >= 0 || tLow.indexOf('dash') >= 0) {
-          seenTexts[t] = true;
-          navTexts.push({ text: t, tag: el2.tagName, className: (el2.className || '').substring(0, 60) });
+      if (t.length > 1 && t.length < 50 && !seenTexts[t]) {
+        seenTexts[t] = true;
+        var clickable = el2.onclick || el2.getAttribute('routerlink') || el2.getAttribute('ng-reflect-router-link') || (el2.tagName === 'A' && el2.href);
+        if (clickable || el2.style.cursor === 'pointer' || (el2.className && el2.className.indexOf && (el2.className.indexOf('menu') >= 0 || el2.className.indexOf('nav') >= 0 || el2.className.indexOf('link') >= 0 || el2.className.indexOf('item') >= 0 || el2.className.indexOf('sidebar') >= 0))) {
+          linkList.push({ text: t, tag: el2.tagName, className: (el2.className || '').substring(0, 80), routerLink: (el2.getAttribute('routerlink') || el2.getAttribute('ng-reflect-router-link') || '') });
         }
       }
     }
   }
-  var linkList = navTexts;
 
   var bodyText = (document.body.innerText || '').substring(0, 3000);
-  return JSON.stringify({ fields: fields, buttons: btnList, navLinks: linkList, authInfo: authInfo, routes: routeInfo, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
+  return JSON.stringify({ fields: fields, buttons: btnList, navLinks: linkList, authInfo: authInfo, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
 })()`
 
     // Single BQL call with 5 steps:
