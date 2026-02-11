@@ -368,20 +368,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 })()`
 
-    // Single BQL call: login + goto wrapper + extract iframe contents (or URL)
-    bqlQuery = `mutation LoginAndExtract {
+    // Navigate to Angular app after extracting iframe URL
+    const navToAngularScript = `(async function() {
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  await sleep(2000);
+  var iframe = document.getElementById('loannex-angular-iframe');
+  if (!iframe || !iframe.src) return JSON.stringify({ error: 'no iframe' });
+  var url = iframe.src;
+  // Navigate entire page to Angular app URL (will destroy this evaluate context — expected)
+  window.location.href = url;
+  await sleep(500);
+  return JSON.stringify({ navigating: url });
+})()`
+
+    // Wait for Angular app to bootstrap and discover its fields
+    const waitAndDiscoverScript = `(async function() {
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  var diag = { steps: [] };
+  diag.steps.push('url: ' + window.location.href);
+  diag.steps.push('title: ' + document.title);
+
+  // Wait for Angular app to render form fields
+  for (var i = 0; i < 15; i++) {
+    await sleep(1000);
+    var inputs = document.querySelectorAll('input:not([type=hidden]), select, textarea');
+    if (inputs.length > 2) {
+      diag.steps.push('ready_at: ' + (i+1) + 's, fields: ' + inputs.length);
+      break;
+    }
+  }
+
+  // Discover all form fields
+  var elements = document.querySelectorAll('input:not([type=hidden]), select, textarea, [role="combobox"], [role="listbox"]');
+  var fields = [];
+  for (var i = 0; i < elements.length; i++) {
+    var el = elements[i];
+    var label = '';
+    var labelEl = el.closest('label') || document.querySelector('label[for="' + el.id + '"]');
+    if (labelEl) label = (labelEl.textContent || '').trim();
+    if (!label && el.previousElementSibling) label = (el.previousElementSibling.textContent || '').trim();
+    if (!label && el.parentElement) {
+      var sib = el.parentElement.querySelector('label, .label, span, .field-label');
+      if (sib && sib !== el) label = (sib.textContent || '').trim();
+    }
+    var opts;
+    if (el.tagName === 'SELECT') {
+      opts = [];
+      for (var j = 0; j < el.options.length && j < 20; j++) opts.push({ v: el.options[j].value, t: el.options[j].text });
+    }
+    fields.push({ tag: el.tagName, id: el.id || '', name: el.name || '', type: el.type || '', label: label.substring(0, 60), placeholder: el.placeholder || '', value: (el.value || '').substring(0, 40), options: opts });
+  }
+
+  // Discover buttons
+  var buttons = document.querySelectorAll('button, input[type=submit], a.btn');
+  var btnList = [];
+  for (var b = 0; b < buttons.length && b < 20; b++) {
+    btnList.push({ tag: buttons[b].tagName, text: (buttons[b].textContent || '').trim().substring(0, 40), id: buttons[b].id || '', className: (buttons[b].className || '').substring(0, 60) });
+  }
+
+  var bodyText = (document.body.innerText || '').substring(0, 1500);
+  return JSON.stringify({ fields: fields, buttons: btnList, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
+})()`
+
+    // Single BQL call - all in one browser session
+    // BQL continues executing after step errors (confirmed by testing)
+    bqlQuery = `mutation LoginAndDiscover {
   loginPage: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
   login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 8000) { value }
   waitNav: evaluate(content: ${JSON.stringify(waitScript)}, timeout: 8000) { value }
-  wrapper: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
-  extract: evaluate(content: ${JSON.stringify(extractIframeScript)}, timeout: 20000) { value }
+  navToApp: evaluate(content: ${JSON.stringify(navToAngularScript)}, timeout: 10000) { value }
+  discover: evaluate(content: ${JSON.stringify(waitAndDiscoverScript)}, timeout: 25000) { value }
 }`
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: bqlQuery }),
-      signal: AbortSignal.timeout(50000),
+      signal: AbortSignal.timeout(55000),
     })
 
     if (!bqlResp.ok) {
@@ -410,17 +473,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try { return typeof val === 'string' ? JSON.parse(val) : val } catch { return val }
     }
 
-    // Parse extract results — may contain iframe contents (if CORS relaxed) or just the URL
+    // Parse results from each BQL step
     const loginData = safeParseValue(bqlResult.data?.login?.value)
-    const extractData = safeParseValue(bqlResult.data?.extract?.value)
+    const navData = safeParseValue(bqlResult.data?.navToApp?.value)
+    const discoverData = safeParseValue(bqlResult.data?.discover?.value)
 
     return res.json({
       success: true,
       mode: isDiscovery ? 'discovery' : 'full',
-      angularAppUrl: extractData?.iframeUrl || null,
-      crossOriginAccess: extractData?.crossOrigin === false,
       login: loginData,
-      iframeData: extractData,
+      navigation: navData,
+      discovery: discoverData,
       debug: { keys: Object.keys(bqlResult.data || {}), errors: bqlResult.errors || null }
     })
   } catch (error) {
