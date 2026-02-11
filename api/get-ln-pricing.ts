@@ -333,8 +333,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   await sleep(2000);
 
   // Check for iframe (Angular app embedded in dashboard)
-  var iframe = document.querySelector('iframe[id*=loannex], iframe[src*=webapp.loannex], iframe[src*=nex-app], iframe');
-  if (iframe && iframe.src && iframe.src.indexOf('loannex') >= 0) {
+  var iframes = document.getElementsByTagName('iframe');
+  var iframe = null;
+  for (var fi = 0; fi < iframes.length; fi++) {
+    if (iframes[fi].src && iframes[fi].src.indexOf('loannex') >= 0) { iframe = iframes[fi]; break; }
+    if (iframes[fi].src && iframes[fi].src.indexOf('nex-app') >= 0) { iframe = iframes[fi]; break; }
+  }
+  if (!iframe && iframes.length > 0) iframe = iframes[0];
+  if (iframe && iframe.src && iframe.src.length > 10) {
     diag.steps.push('iframe_found: ' + iframe.src.substring(0, 100));
     // Navigate to iframe URL directly
     window.location.href = iframe.src;
