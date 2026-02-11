@@ -665,7 +665,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-gray-900 tracking-tight">MyPrice</span>
+              <span className="text-xl font-bold text-gray-900 tracking-tight">OpenPrice</span>
               <span className="bg-gray-900 text-white text-xs font-bold px-1.5 py-0.5 rounded">AI</span>
             </div>
             {/* Desktop nav */}
@@ -1713,10 +1713,9 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold text-gray-900 tracking-tight">MyPrice</span>
-              <span className="bg-gray-900 text-white text-[10px] font-bold px-1 py-0.5 rounded leading-none">AI</span>
+              <span className="text-sm font-bold text-gray-900 tracking-tight">OpenBroker Labs</span>
             </div>
-            <p className="hidden sm:block text-sm text-gray-500">© {new Date().getFullYear()} MyPrice AI. All rights reserved.</p>
+            <p className="hidden sm:block text-sm text-gray-500">© {new Date().getFullYear()} OpenBroker Labs. All rights reserved.</p>
           </div>
         </div>
       </footer>
