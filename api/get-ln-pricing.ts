@@ -471,26 +471,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     btnList.push({ tag: buttons[b].tagName, text: (buttons[b].textContent || '').trim().substring(0, 50), id: buttons[b].id || '', className: (buttons[b].className || '').substring(0, 80) });
   }
 
-  // Discover ALL clickable/navigation elements (Angular uses custom components, not <a href>)
-  var navEls = document.querySelectorAll('a, [routerlink], [ng-reflect-router-link], li, .p-menuitem, .p-panelmenu-header, .nav-link, .sidebar-item, [class*=menu], [class*=nav-item], [class*=sidebar]');
-  var linkList = [];
+  // Capture auth tokens from browser storage
+  var authInfo = {};
+  try {
+    var ls = {};
+    for (var k = 0; k < localStorage.length; k++) {
+      var key = localStorage.key(k);
+      ls[key] = (localStorage.getItem(key) || '').substring(0, 200);
+    }
+    authInfo.localStorage = ls;
+  } catch(e) { authInfo.localStorageError = e.message; }
+  try {
+    var ss = {};
+    for (var k = 0; k < sessionStorage.length; k++) {
+      var key = sessionStorage.key(k);
+      ss[key] = (sessionStorage.getItem(key) || '').substring(0, 200);
+    }
+    authInfo.sessionStorage = ss;
+  } catch(e) { authInfo.sessionStorageError = e.message; }
+  authInfo.cookies = (document.cookie || '').substring(0, 500);
+
+  // Try to find Angular routes via router config
+  var routeInfo = [];
+  try {
+    var appRoot = document.querySelector('app-root, [ng-version]');
+    if (appRoot && window.ng) {
+      var comp = window.ng.getComponent(appRoot);
+      if (comp && comp.router && comp.router.config) {
+        for (var ri = 0; ri < comp.router.config.length; ri++) {
+          routeInfo.push(comp.router.config[ri].path || '');
+        }
+      }
+    }
+  } catch(e) { routeInfo = ['router_error: ' + e.message]; }
+
+  // Scan all DOM text for navigation-like words
+  var allElements = document.querySelectorAll('*');
+  var navTexts = [];
   var seenTexts = {};
-  for (var nl = 0; nl < navEls.length && nl < 80; nl++) {
-    var linkText = (navEls[nl].textContent || '').trim().replace(/\\s+/g, ' ');
-    if (linkText.length > 0 && linkText.length < 80 && !seenTexts[linkText]) {
-      seenTexts[linkText] = true;
-      linkList.push({
-        text: linkText,
-        tag: navEls[nl].tagName,
-        href: (navEls[nl].getAttribute('href') || ''),
-        routerLink: (navEls[nl].getAttribute('routerlink') || navEls[nl].getAttribute('ng-reflect-router-link') || ''),
-        className: (navEls[nl].className || '').substring(0, 100)
-      });
+  for (var ne = 0; ne < allElements.length && ne < 5000; ne++) {
+    var el2 = allElements[ne];
+    if (el2.children.length === 0 || el2.tagName === 'SPAN' || el2.tagName === 'A' || el2.tagName === 'LI') {
+      var t = (el2.textContent || '').trim();
+      if (t.length > 1 && t.length < 40 && !seenTexts[t]) {
+        var tLow = t.toLowerCase();
+        if (tLow.indexOf('pric') >= 0 || tLow.indexOf('quick') >= 0 || tLow.indexOf('scenario') >= 0 || tLow.indexOf('loan') >= 0 || tLow.indexOf('search') >= 0 || tLow.indexOf('menu') >= 0 || tLow.indexOf('home') >= 0 || tLow.indexOf('dash') >= 0) {
+          seenTexts[t] = true;
+          navTexts.push({ text: t, tag: el2.tagName, className: (el2.className || '').substring(0, 60) });
+        }
+      }
     }
   }
+  var linkList = navTexts;
 
   var bodyText = (document.body.innerText || '').substring(0, 3000);
-  return JSON.stringify({ fields: fields, buttons: btnList, navLinks: linkList, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
+  return JSON.stringify({ fields: fields, buttons: btnList, navLinks: linkList, authInfo: authInfo, routes: routeInfo, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
 })()`
 
     // Single BQL call with 5 steps:
