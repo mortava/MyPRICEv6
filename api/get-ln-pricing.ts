@@ -6,73 +6,42 @@ const LOANNEX_URL = 'https://web.loannex.com/iframe/loadiframe?_id=&page=nex-app
 // Vercel hobby plan: extend timeout to 60s
 export const config = { maxDuration: 60 }
 
-// ================= Login Script (AJAX — avoids page navigation) =================
+// ================= Login Script (Button click via setTimeout) =================
 function buildLoginScript(email: string, password: string): string {
   return `(async function() {
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  var diag = { steps: [], ts: Date.now() };
+  var diag = { steps: [] };
 
   await sleep(1500);
-  diag.steps.push('page: ' + document.title + ' | ' + window.location.href);
+  diag.steps.push('page: ' + document.title);
 
-  // Check if already logged in (no login form)
   var userInput = document.getElementById('UserName');
-  if (!userInput) {
-    var bodyText = (document.body.innerText || '').substring(0, 300);
-    diag.steps.push('no_login_form: ' + bodyText);
-    return JSON.stringify({ loggedIn: true, diag: diag });
+  var passwordInput = document.getElementById('Password');
+  var loginBtn = document.getElementById('btnSubmit');
+
+  if (!userInput || !passwordInput) {
+    return JSON.stringify({ loggedIn: false, error: 'no_form', diag: diag });
   }
 
-  // Login via fetch (AJAX) to avoid page navigation that destroys evaluate context
-  // Try the form action first, fall back to common endpoints
-  var form = userInput.closest('form');
-  var loginUrl = form ? form.action : '/Account/Login';
-  var returnUrl = '/iframe/loadiframe?_id=&page=nex-app';
-
-  diag.steps.push('login_url: ' + loginUrl);
-
-  // Get any anti-forgery tokens
-  var tokenInput = form ? form.querySelector('input[name="__RequestVerificationToken"]') : null;
-  var formBody = 'UserName=' + encodeURIComponent('${email}') + '&Password=' + encodeURIComponent('${password}');
-  if (tokenInput) {
-    formBody += '&__RequestVerificationToken=' + encodeURIComponent(tokenInput.value);
-    diag.steps.push('antiforgery_found');
+  // Fill credentials
+  function setInput(el, val) {
+    el.focus();
+    var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(el, val);
+    el.dispatchEvent(new Event('input', {bubbles: true}));
+    el.dispatchEvent(new Event('change', {bubbles: true}));
   }
 
-  try {
-    var resp = await fetch(loginUrl + '?returnUrl=' + encodeURIComponent(returnUrl), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formBody,
-      redirect: 'manual',
-      credentials: 'include'
-    });
-    diag.steps.push('login_status: ' + resp.status + ' type: ' + resp.type);
+  setInput(userInput, '${email}');
+  await sleep(200);
+  setInput(passwordInput, '${password}');
+  await sleep(200);
 
-    // Check cookies were set
-    diag.steps.push('cookies: ' + document.cookie.substring(0, 200));
-    return JSON.stringify({ loggedIn: true, status: resp.status, diag: diag });
-  } catch(err) {
-    diag.steps.push('fetch_error: ' + err.message);
+  // Schedule click via setTimeout — returns BEFORE navigation starts
+  if (loginBtn) setTimeout(function() { loginBtn.click(); }, 150);
+  diag.steps.push('click_scheduled');
 
-    // Fallback: click the button (will cause navigation but we handle it)
-    var loginBtn = document.getElementById('btnSubmit');
-    if (loginBtn) {
-      // Fill form values first
-      function setInput(el, val) {
-        el.focus();
-        var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-        setter.call(el, val);
-        el.dispatchEvent(new Event('input', {bubbles: true}));
-        el.dispatchEvent(new Event('change', {bubbles: true}));
-      }
-      setInput(userInput, '${email}');
-      setInput(document.getElementById('Password'), '${password}');
-      setTimeout(function() { loginBtn.click(); }, 100);
-      diag.steps.push('fallback_click_scheduled');
-    }
-    return JSON.stringify({ loggedIn: false, fallback: true, diag: diag });
-  }
+  return JSON.stringify({ loginScheduled: true, diag: diag });
 })()`
 }
 
@@ -354,48 +323,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Build BQL query - login then either discover or fill+scrape
     let bqlQuery: string
 
-    // Single-BQL approach: Login via AJAX (no navigation), then goto wrapper, extract iframe URL,
-    // navigate to Angular app via evaluate + window.location, then discover/fill/scrape
-    // All in one browser session so cookies and tokens persist.
+    // Single-BQL approach (one browser session):
+    // 1. goto login → fill+click(setTimeout) → sleep(wait for nav) → goto wrapper → extract iframe URL
+    // 2. Then a second BQL call to the Angular app URL (same token works standalone)
+    const waitScript = `(async function() { await new Promise(r => setTimeout(r, 5000)); return JSON.stringify({ waited: true }); })()`
 
-    // Script that extracts iframe URL from wrapper page AND navigates to it
-    const extractAndNavScript = `(async function() {
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  await sleep(2000);
+    const extractIframeScript = `(async function() {
+  await new Promise(r => setTimeout(r, 2000));
   var iframe = document.getElementById('loannex-angular-iframe');
-  if (!iframe) {
-    return JSON.stringify({ error: 'no iframe', body: (document.body.innerText || '').substring(0, 300) });
-  }
-  var url = iframe.src;
-  // Navigate to the Angular app URL (this will destroy this evaluate, but the next step runs on the new page)
-  window.location.href = url;
-  // Brief pause to let navigation start
-  await sleep(500);
-  return JSON.stringify({ iframeUrl: url, navigating: true });
+  if (!iframe) return JSON.stringify({ error: 'no iframe', body: (document.body.innerText || '').substring(0, 300) });
+  return JSON.stringify({ iframeUrl: iframe.src });
 })()`
 
-    // Build BQL query — all in one call, one browser session
-    // Steps: goto login → AJAX login → goto wrapper → extract+navigate → wait → discover/fill/scrape
-    const waitForAngularScript = `(async function() {
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  // Wait for Angular app to fully bootstrap
-  for (var i = 0; i < 10; i++) {
-    await sleep(1000);
-    var inputs = document.querySelectorAll('input:not([type=hidden]), select, textarea');
-    if (inputs.length > 3) {
-      return JSON.stringify({ ready: true, fieldCount: inputs.length, url: window.location.href });
-    }
-  }
-  return JSON.stringify({ ready: false, url: window.location.href, body: (document.body.innerText || '').substring(0, 500) });
-})()`
-
-    if (isDiscovery) {
-      bqlQuery = `mutation AllInOneDiscover {
+    // Phase 1: Login and extract the Angular app URL (with tokenKey)
+    const phase1Query = `mutation LoginAndExtract {
   loginPage: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
-  login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 10000) { value }
-  wrapperPage: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
-  extractNav: evaluate(content: ${JSON.stringify(extractAndNavScript)}, timeout: 8000) { value }
-  waitAngular: evaluate(content: ${JSON.stringify(waitForAngularScript)}, timeout: 15000) { value }
+  login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 8000) { value }
+  waitNav: evaluate(content: ${JSON.stringify(waitScript)}, timeout: 8000) { value }
+  wrapper: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
+  extract: evaluate(content: ${JSON.stringify(extractIframeScript)}, timeout: 8000) { value }
+}`
+
+    const phase1Resp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: phase1Query }),
+      signal: AbortSignal.timeout(30000),
+    })
+
+    if (!phase1Resp.ok) {
+      return res.json({ success: false, error: `Phase 1 HTTP ${phase1Resp.status}` })
+    }
+
+    const phase1Result = await phase1Resp.json()
+    const extractVal = phase1Result.data?.extract?.value
+    const extractData = extractVal ? (typeof extractVal === 'string' ? JSON.parse(extractVal) : extractVal) : null
+    const angularAppUrl = extractData?.iframeUrl
+
+    if (!angularAppUrl) {
+      return res.json({
+        success: false,
+        error: 'Could not extract Angular app URL after login',
+        debug: { phase1Result, extractData }
+      })
+    }
+
+    // Phase 2: Navigate to Angular app (tokenKey-based auth, works in fresh browser)
+    if (isDiscovery) {
+      bqlQuery = `mutation DiscoverApp {
+  app: goto(url: "${angularAppUrl}", waitUntil: load) { status time }
+  waitForApp: evaluate(content: "(async function() { for (var i=0; i<15; i++) { await new Promise(r=>setTimeout(r,1000)); if (document.querySelectorAll('input,select,textarea').length > 2) return JSON.stringify({ready:true,count:document.querySelectorAll('input,select,textarea').length,url:location.href}); } return JSON.stringify({ready:false,url:location.href,body:(document.body.innerText||'').substring(0,500)}); })()", timeout: 20000) { value }
   discover: evaluate(content: ${JSON.stringify(discoveryScript)}, timeout: 15000) { value }
 }`
     } else {
@@ -403,12 +380,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const fillScript = buildFormFillScript(formData)
       const scrapeScript = buildScrapeScript()
 
-      bqlQuery = `mutation AllInOnePricing {
-  loginPage: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
-  login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 10000) { value }
-  wrapperPage: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
-  extractNav: evaluate(content: ${JSON.stringify(extractAndNavScript)}, timeout: 8000) { value }
-  waitAngular: evaluate(content: ${JSON.stringify(waitForAngularScript)}, timeout: 15000) { value }
+      bqlQuery = `mutation PriceApp {
+  app: goto(url: "${angularAppUrl}", waitUntil: load) { status time }
+  waitForApp: evaluate(content: "(async function() { for (var i=0; i<15; i++) { await new Promise(r=>setTimeout(r,1000)); if (document.querySelectorAll('input,select,textarea').length > 2) return JSON.stringify({ready:true}); } return JSON.stringify({ready:false}); })()", timeout: 20000) { value }
   fill: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 15000) { value }
   scrape: evaluate(content: ${JSON.stringify(scrapeScript)}, timeout: 30000) { value }
 }`
@@ -447,8 +421,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try { return typeof val === 'string' ? JSON.parse(val) : val } catch { return val }
     }
 
-    const loginData = safeParseValue(bqlResult.data?.login?.value)
-    const waitData = safeParseValue(bqlResult.data?.waitAngular?.value)
+    const waitAppData = safeParseValue(bqlResult.data?.waitForApp?.value)
 
     if (isDiscovery) {
       const discoverData = safeParseValue(bqlResult.data?.discover?.value)
@@ -456,10 +429,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({
         success: true,
         mode: 'discovery',
-        login: loginData,
-        angularReady: waitData,
+        angularAppUrl,
+        angularReady: waitAppData,
         discovery: discoverData,
-        debug: { allKeys: Object.keys(bqlResult.data || {}), errors: bqlResult.errors || null }
+        debug: { phase2Keys: Object.keys(bqlResult.data || {}), errors: bqlResult.errors || null }
       })
     }
 
@@ -475,16 +448,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({
       success: true,
       mode: 'full',
+      angularAppUrl,
       data: {
         source: 'loannex',
         rateOptions: rates,
         totalRates: rates.length,
         headers: scrapeData?.headers || [],
-        angularUrl: waitData?.url || null,
       },
       debug: {
-        login: loginData,
-        angular: waitData,
+        angular: waitAppData,
         fill: fillData,
         scrape: scrapeData?.diag || null,
       },
