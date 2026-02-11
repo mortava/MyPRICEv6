@@ -496,61 +496,71 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       var jsResp = await fetch(mainUrl);
       var jsText = await jsResp.text();
 
-      // Navigate to Quick Pricer page and discover form dropdown options
-      diag.steps.push('navigating_to_nex_app');
-      window.location.href = 'https://webapp.loannex.com/nex-app';
-      await sleep(5000);
+      // Use JWT to call API directly - no page navigation needed
+      var apiBase = 'https://nexapi.loannex.com';
+      var authHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt };
 
-      diag.steps.push('nex_app_url: ' + window.location.href);
+      // Test 1: GET exception-buyers (see what investors/programs exist)
+      var buyersResp = null;
+      try {
+        var resp1 = await fetch(apiBase + '/users/' + userGuid + '/exception-buyers', { headers: authHeaders });
+        buyersResp = { status: resp1.status, body: (await resp1.text()).substring(0, 1500) };
+        diag.steps.push('buyers: ' + resp1.status);
+      } catch(e) { buyersResp = { error: e.message }; }
 
-      // Wait for the pricing form to render
-      for (var wi = 0; wi < 10; wi++) {
-        await sleep(1000);
-        var allInputs = document.querySelectorAll('input:not([type=hidden]), select, textarea, p-dropdown, [role=combobox]');
-        if (allInputs.length > 5) {
-          diag.steps.push('form_ready: ' + allInputs.length + ' inputs at ' + (wi+1) + 's');
-          break;
-        }
-      }
+      // Test 2: POST quick-prices with empty data (see validation errors)
+      var emptyResp = null;
+      try {
+        var resp2 = await fetch(apiBase + '/loans/apps/' + userGuid + '/quick-prices', {
+          method: 'POST', headers: authHeaders, body: JSON.stringify({ data: {} })
+        });
+        emptyResp = { status: resp2.status, body: (await resp2.text()).substring(0, 1500) };
+        diag.steps.push('empty: ' + resp2.status);
+      } catch(e) { emptyResp = { error: e.message }; }
 
-      // Discover all form fields with their dropdown options
-      // PrimeNG dropdowns use p-dropdown component with hidden select or div[role=listbox]
-      var formFields = [];
+      // Test 3: POST with corrected DSCR enum + all field names
+      var fullResp = null;
+      try {
+        var resp3 = await fetch(apiBase + '/loans/apps/' + userGuid + '/quick-prices', {
+          method: 'POST', headers: authHeaders,
+          body: JSON.stringify({
+            data: {
+              loanAmount: 450000,
+              appraisedValue: 600000,
+              purchasePrice: 600000,
+              fico: 740,
+              state: 'CA',
+              county: 'Los Angeles',
+              zipCode: '90210',
+              purpose: 'Purchase',
+              occupancy: 'Investment',
+              propertyType: 'SFR',
+              incomeDocumentation: 'DebtServiceCoverageRatio',
+              numberOfUnits: 1,
+              escrow: 'Yes',
+              isFirstTimeHomebuyer: false,
+              isFirstTimeInvestor: false,
+              isShortTermRental: false,
+              isRuralProperty: false,
+              isSelfEmployed: false,
+              numberOfFinancedProperties: 1,
+              prePaymentPenaltyTermInMonths: 60,
+              citizenship: 'UsCitizen',
+              buydownType: null,
+              creditEvent: null,
+              cashOutAmount: 0,
+              secondLein: 0,
+              totalPostClosingLiquidAssets: 0,
+              helocDrawnAmount: 0,
+              helocLineAmount: 0
+            }
+          })
+        });
+        fullResp = { status: resp3.status, body: (await resp3.text()).substring(0, 3000) };
+        diag.steps.push('full: ' + resp3.status);
+      } catch(e) { fullResp = { error: e.message }; }
 
-      // Get all PrimeNG dropdown elements and their options
-      var dropdowns = document.querySelectorAll('p-dropdown, [class*=p-dropdown]');
-      diag.steps.push('p-dropdowns: ' + dropdowns.length);
-
-      // Also get standard selects
-      var selects = document.querySelectorAll('select');
-      for (var si = 0; si < selects.length; si++) {
-        var sel = selects[si];
-        var opts = [];
-        for (var oi = 0; oi < sel.options.length && oi < 30; oi++) {
-          opts.push({ v: sel.options[oi].value, t: sel.options[oi].text });
-        }
-        formFields.push({ tag: 'SELECT', id: sel.id || '', name: sel.name || '', options: opts });
-      }
-
-      // Get all inputs and their labels
-      var inputs = document.querySelectorAll('input:not([type=hidden]), textarea');
-      for (var ii = 0; ii < inputs.length && ii < 50; ii++) {
-        var inp = inputs[ii];
-        var lbl = '';
-        var lblEl = inp.closest('label') || document.querySelector('label[for=' + JSON.stringify(inp.id) + ']');
-        if (lblEl) lbl = (lblEl.textContent || '').trim();
-        if (!lbl && inp.parentElement) {
-          var sib = inp.parentElement.querySelector('label, .label, span');
-          if (sib && sib !== inp) lbl = (sib.textContent || '').trim();
-        }
-        if (!lbl) lbl = inp.getAttribute('aria-label') || inp.getAttribute('placeholder') || '';
-        formFields.push({ tag: 'INPUT', id: inp.id || '', name: inp.name || '', type: inp.type || '', label: lbl.substring(0, 50), value: (inp.value || '').substring(0, 30) });
-      }
-
-      // Capture full body text to see form labels
-      var bodyText = (document.body.innerText || '').substring(0, 3000);
-
-      jsDiscovery = { formFields: formFields, bodyPreview: bodyText };
+      jsDiscovery = { buyersResp: buyersResp, emptyResp: emptyResp, fullResp: fullResp };
     } catch(e) {
       diag.steps.push('error: ' + e.message);
     }
