@@ -16,17 +16,17 @@ function buildLoginScript(email: string, password: string): string {
   diag.steps.push('page_loaded: ' + document.title);
   diag.steps.push('url: ' + window.location.href);
 
-  // Look for login form
-  var emailInput = document.querySelector('input[type="email"], input[name="email"], input[name="username"], input[placeholder*="mail"], input[placeholder*="user"]');
-  var passwordInput = document.querySelector('input[type="password"]');
-  var loginBtn = document.querySelector('button[type="submit"], input[type="submit"], button.btn-primary, button.login-btn, button:not([type])');
+  // Loannex login form uses #UserName (text), #Password, #btnSubmit (button)
+  var userInput = document.getElementById('UserName');
+  var passwordInput = document.getElementById('Password');
+  var loginBtn = document.getElementById('btnSubmit');
 
-  diag.steps.push('email_found: ' + !!emailInput + (emailInput ? ' id=' + emailInput.id + ' name=' + emailInput.name : ''));
-  diag.steps.push('password_found: ' + !!passwordInput + (passwordInput ? ' id=' + passwordInput.id : ''));
-  diag.steps.push('login_btn_found: ' + !!loginBtn + (loginBtn ? ' text=' + (loginBtn.textContent || '').trim().substring(0, 30) : ''));
+  diag.steps.push('user_found: ' + !!userInput);
+  diag.steps.push('password_found: ' + !!passwordInput);
+  diag.steps.push('login_btn_found: ' + !!loginBtn);
 
-  if (!emailInput || !passwordInput) {
-    // Maybe already logged in?
+  if (!userInput || !passwordInput) {
+    // Maybe already logged in or redirected
     var bodyText = (document.body.innerText || '').substring(0, 500);
     diag.steps.push('no_login_form_body: ' + bodyText);
     return JSON.stringify({ loggedIn: bodyText.indexOf('Price') >= 0 || bodyText.indexOf('Loan') >= 0, diag: diag });
@@ -42,18 +42,17 @@ function buildLoginScript(email: string, password: string): string {
     el.dispatchEvent(new Event('blur', {bubbles: true}));
   }
 
-  setInput(emailInput, '${email}');
+  setInput(userInput, '${email}');
   await sleep(300);
   setInput(passwordInput, '${password}');
   await sleep(300);
 
-  // Click login
+  // Click Sign In button
   if (loginBtn) {
     loginBtn.click();
     diag.steps.push('login_clicked');
   } else {
-    // Try submitting the form
-    var form = emailInput.closest('form');
+    var form = userInput.closest('form');
     if (form) { form.submit(); diag.steps.push('form_submitted'); }
   }
 
