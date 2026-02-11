@@ -189,14 +189,19 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
   async function setDropdown(labelText, optionText) {
     var container = findField(labelText);
     if (!container) { diag.fills.push(labelText + ': NOT_FOUND'); return false; }
-    var input = container.querySelector('input[type=text]');
+    var input = container.querySelector('input:not([type=checkbox]):not([type=hidden])') ||
+      container.querySelector('.p-dropdown-label') ||
+      container.querySelector('.p-inputtext') ||
+      container.querySelector('[role=combobox]');
     if (!input) { diag.fills.push(labelText + ': NO_INPUT'); return false; }
 
     // Check if already set to correct value
-    if (input.value === optionText) { diag.fills.push(labelText + ': ALREADY=' + optionText); return true; }
+    if ((input.value || input.textContent || '').trim() === optionText) { diag.fills.push(labelText + ': ALREADY=' + optionText); return true; }
 
-    // Click to open dropdown
-    input.click();
+    // Click the dropdown trigger area (not just input — PrimeNG needs trigger click)
+    var dropdownDiv = container.querySelector('.p-dropdown') || input.closest('.p-dropdown') || input.parentElement;
+    if (dropdownDiv) dropdownDiv.click();
+    else input.click();
     await sleep(400);
 
     // Find dropdown panel (PrimeNG renders overlay at body level)
