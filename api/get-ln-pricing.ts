@@ -92,18 +92,67 @@ function buildNavToIframeScript(): string {
 }
 
 // ================= Step 5: Fill form + Get Price + Scrape =================
-function buildFillAndScrapeScript(fieldMap: Record<string, string>): string {
+function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: string, password: string): string {
   const mapJson = JSON.stringify(fieldMap)
   return `(async function() {
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   var diag = { steps: [], fills: [] };
   var fieldMap = ${mapJson};
 
-  // Wait for Quick Pricer form to load (tokenKey auto-auth)
-  for (var w = 0; w < 12; w++) {
+  diag.steps.push('url: ' + window.location.href);
+
+  // Poll for either pricing form (>10 inputs) OR Angular login form
+  var formReady = false;
+  for (var w = 0; w < 10; w++) {
     await sleep(1500);
-    var inputs = document.querySelectorAll('input:not([type=hidden])');
-    if (inputs.length > 10) { diag.steps.push('form_at: ' + ((w+1)*1.5) + 's, fields: ' + inputs.length); break; }
+    var usernameField = document.getElementById('username');
+    var passwordField = document.getElementById('password');
+    var allInputs = document.querySelectorAll('input:not([type=hidden])');
+
+    if (usernameField && passwordField) {
+      diag.steps.push('angular_login_at: ' + ((w+1)*1.5) + 's');
+      // Do Angular login
+      function setLoginInput(el, val) {
+        el.focus(); el.value = '';
+        el.dispatchEvent(new Event('focus', {bubbles: true}));
+        var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+        if (setter) setter.call(el, val);
+        el.dispatchEvent(new Event('input', {bubbles: true}));
+        el.dispatchEvent(new Event('change', {bubbles: true}));
+        el.dispatchEvent(new Event('blur', {bubbles: true}));
+      }
+      setLoginInput(usernameField, '${email}');
+      await sleep(300);
+      setLoginInput(passwordField, '${password}');
+      await sleep(300);
+      var signInBtn = document.querySelector('button.login-button') || document.querySelector('button');
+      if (signInBtn) { signInBtn.click(); diag.steps.push('login_clicked'); }
+
+      // Wait for pricing form to load after login
+      for (var li = 0; li < 12; li++) {
+        await sleep(1500);
+        var inputs2 = document.querySelectorAll('input:not([type=hidden])');
+        if (inputs2.length > 10) {
+          diag.steps.push('form_after_login_at: ' + ((li+1)*1.5) + 's, fields: ' + inputs2.length);
+          formReady = true;
+          break;
+        }
+      }
+      break;
+    }
+
+    if (allInputs.length > 10) {
+      diag.steps.push('form_at: ' + ((w+1)*1.5) + 's, fields: ' + allInputs.length);
+      formReady = true;
+      break;
+    }
+  }
+
+  if (!formReady) {
+    diag.steps.push('form_not_loaded');
+    diag.bodyPreview = (document.body.innerText || '').substring(0, 1000);
+    diag.inputCount = document.querySelectorAll('input').length;
+    return JSON.stringify({ success: false, error: 'form_not_loaded', rates: [], diag: diag });
   }
 
   // Find field container by label text
@@ -339,7 +388,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const loginScript = buildLoginScript(loannexUser, loannexPassword)
     const waitScript = `(async function() { await new Promise(r => setTimeout(r, 5000)); return JSON.stringify({ ok: true }); })()`
     const navScript = buildNavToIframeScript()
-    const fillScript = buildFillAndScrapeScript(fieldMap)
+    const fillScript = buildFillAndScrapeScript(fieldMap, loannexUser, loannexPassword)
 
     const bqlQuery = `mutation FillAndPrice {
   loginPage: goto(url: "${LOANNEX_LOGIN_URL}", waitUntil: networkIdle) { status time }
