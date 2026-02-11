@@ -471,8 +471,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     btnList.push({ tag: buttons[b].tagName, text: (buttons[b].textContent || '').trim().substring(0, 50), id: buttons[b].id || '', className: (buttons[b].className || '').substring(0, 80) });
   }
 
+  // Discover navigation links (sidebar, navbar, menu items)
+  var navLinks = document.querySelectorAll('a[href], a[routerlink], [routerlink], nav a, .sidebar a, .nav-item a, .menu-item, li a');
+  var linkList = [];
+  for (var nl = 0; nl < navLinks.length && nl < 50; nl++) {
+    var linkText = (navLinks[nl].textContent || '').trim();
+    if (linkText.length > 0 && linkText.length < 80) {
+      linkList.push({
+        text: linkText,
+        href: (navLinks[nl].getAttribute('href') || '').substring(0, 120),
+        routerLink: (navLinks[nl].getAttribute('routerlink') || '').substring(0, 120),
+        className: (navLinks[nl].className || '').substring(0, 80)
+      });
+    }
+  }
+
   var bodyText = (document.body.innerText || '').substring(0, 2000);
-  return JSON.stringify({ fields: fields, buttons: btnList, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
+  return JSON.stringify({ fields: fields, buttons: btnList, navLinks: linkList, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
 })()`
 
     // Single BQL call with 5 steps:
