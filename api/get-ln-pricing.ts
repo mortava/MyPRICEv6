@@ -164,45 +164,130 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     return JSON.stringify({ success: false, error: 'form_not_loaded', rates: [], diag: diag });
   }
 
-  // Find field container by label text
-  function findField(labelText) {
-    var allDivs = document.querySelectorAll('div.flex.flex-row');
-    for (var d = 0; d < allDivs.length; d++) {
-      var divText = (allDivs[d].textContent || '').trim();
-      if (divText.indexOf(labelText) === 0 || divText.startsWith(labelText)) {
-        return allDivs[d];
+  // DOM structure diagnostic — understand the PrimeNG form layout
+  var domInfo = {};
+  domInfo.pDropdowns = document.querySelectorAll('p-dropdown, .p-dropdown').length;
+  domInfo.pInputNumbers = document.querySelectorAll('p-inputnumber, .p-inputnumber').length;
+  domInfo.visibleInputs = document.querySelectorAll('input:not([type=hidden])').length;
+  domInfo.allInputs = document.querySelectorAll('input').length;
+  domInfo.selects = document.querySelectorAll('select').length;
+
+  // Find label elements and their surrounding DOM structure
+  var labelSamples = [];
+  var targetLabels = ['Purpose', 'FICO', 'Appraised Value'];
+  for (var tl = 0; tl < targetLabels.length; tl++) {
+    var targetLabel = targetLabels[tl];
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    while (node = walker.nextNode()) {
+      if (node.textContent.trim() === targetLabel) {
+        var parent = node.parentElement;
+        var gp = parent ? parent.parentElement : null;
+        var ggp = gp ? gp.parentElement : null;
+        var sample = {
+          label: targetLabel,
+          parentTag: parent ? parent.tagName + '.' + (parent.className || '').substring(0, 80) : 'none',
+          parentHTML: parent ? parent.outerHTML.substring(0, 200) : 'none',
+          gpTag: gp ? gp.tagName + '.' + (gp.className || '').substring(0, 80) : 'none',
+          gpChildTags: [],
+          ggpTag: ggp ? ggp.tagName + '.' + (ggp.className || '').substring(0, 80) : 'none',
+          ggpChildTags: [],
+        };
+        if (gp) {
+          for (var gc = 0; gc < gp.children.length && gc < 5; gc++) {
+            sample.gpChildTags.push(gp.children[gc].tagName + '.' + (gp.children[gc].className || '').substring(0, 40));
+          }
+        }
+        if (ggp) {
+          for (var ggc = 0; ggc < ggp.children.length && ggc < 5; ggc++) {
+            sample.ggpChildTags.push(ggp.children[ggc].tagName + '.' + (ggp.children[ggc].className || '').substring(0, 40));
+          }
+        }
+        labelSamples.push(sample);
+        break;
       }
     }
-    // Fallback: search all elements
-    var allEls = document.querySelectorAll('*');
-    for (var e = 0; e < allEls.length; e++) {
-      var directText = '';
-      for (var c = 0; c < allEls[e].childNodes.length; c++) {
-        if (allEls[e].childNodes[c].nodeType === 3) directText += allEls[e].childNodes[c].textContent;
+  }
+  domInfo.labelSamples = labelSamples;
+
+  // Also grab the first p-dropdown's DOM context
+  var firstDropdown = document.querySelector('p-dropdown') || document.querySelector('.p-dropdown');
+  if (firstDropdown) {
+    var dp = firstDropdown.parentElement;
+    var dgp = dp ? dp.parentElement : null;
+    domInfo.firstDropdown = {
+      tag: firstDropdown.tagName + '.' + (firstDropdown.className || '').substring(0, 80),
+      parentTag: dp ? dp.tagName + '.' + (dp.className || '').substring(0, 80) : 'none',
+      gpTag: dgp ? dgp.tagName + '.' + (dgp.className || '').substring(0, 80) : 'none',
+      prevSiblingText: firstDropdown.previousElementSibling ? (firstDropdown.previousElementSibling.textContent || '').trim().substring(0, 30) : 'none',
+      parentText: dp ? (dp.textContent || '').trim().substring(0, 50) : 'none',
+    };
+  }
+
+  diag.domInfo = domInfo;
+
+  // Find field input by label text — walk DOM to find associated PrimeNG component
+  function findFieldInput(labelText) {
+    // Strategy: find text node matching label, then walk up to find container with input/dropdown
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    while (node = walker.nextNode()) {
+      if (node.textContent.trim() !== labelText) continue;
+      var labelEl = node.parentElement;
+      if (!labelEl) continue;
+
+      // Walk up DOM levels looking for a container that has an input or dropdown
+      var levels = [labelEl, labelEl.parentElement, labelEl.parentElement && labelEl.parentElement.parentElement];
+      for (var lvl = 0; lvl < levels.length; lvl++) {
+        var container = levels[lvl];
+        if (!container) continue;
+
+        // Look for PrimeNG dropdown
+        var pDropdown = container.querySelector('p-dropdown, .p-dropdown');
+        if (pDropdown) return { el: pDropdown, type: 'dropdown', container: container };
+
+        // Look for PrimeNG input number
+        var pInputNum = container.querySelector('p-inputnumber, .p-inputnumber');
+        if (pInputNum) {
+          var innerInput = pInputNum.querySelector('input');
+          return { el: innerInput || pInputNum, type: 'number', container: container };
+        }
+
+        // Look for regular input
+        var input = container.querySelector('input:not([type=hidden]):not([type=checkbox])');
+        if (input) return { el: input, type: 'input', container: container };
       }
-      if (directText.trim() === labelText) return allEls[e].closest('div.flex');
+
+      // Last resort: check next siblings of the label element
+      var sib = labelEl.nextElementSibling;
+      for (var s = 0; s < 3 && sib; s++) {
+        var pDrop = sib.querySelector ? sib.querySelector('p-dropdown, .p-dropdown') : null;
+        if (pDrop) return { el: pDrop, type: 'dropdown', container: sib };
+        var pNum = sib.querySelector ? sib.querySelector('p-inputnumber, .p-inputnumber, input:not([type=hidden])') : null;
+        if (pNum) {
+          var iInput = pNum.querySelector ? pNum.querySelector('input') || pNum : pNum;
+          return { el: iInput, type: pNum.tagName === 'INPUT' ? 'input' : 'number', container: sib };
+        }
+        sib = sib.nextElementSibling;
+      }
+      break; // Only process first match
     }
     return null;
   }
 
   // Set PrimeNG dropdown value
   async function setDropdown(labelText, optionText) {
-    var container = findField(labelText);
-    if (!container) { diag.fills.push(labelText + ': NOT_FOUND'); return false; }
-    var input = container.querySelector('input:not([type=checkbox]):not([type=hidden])') ||
-      container.querySelector('.p-dropdown-label') ||
-      container.querySelector('.p-inputtext') ||
-      container.querySelector('[role=combobox]');
-    if (!input) { diag.fills.push(labelText + ': NO_INPUT'); return false; }
+    var field = findFieldInput(labelText);
+    if (!field) { diag.fills.push(labelText + ': NOT_FOUND'); return false; }
 
-    // Check if already set to correct value
-    if ((input.value || input.textContent || '').trim() === optionText) { diag.fills.push(labelText + ': ALREADY=' + optionText); return true; }
-
-    // Click the dropdown trigger area (not just input — PrimeNG needs trigger click)
-    var dropdownDiv = container.querySelector('.p-dropdown') || input.closest('.p-dropdown') || input.parentElement;
-    if (dropdownDiv) dropdownDiv.click();
-    else input.click();
+    var dropdownEl = field.el;
+    // For PrimeNG dropdowns: click the dropdown element to open
+    dropdownEl.click();
     await sleep(400);
+
+    // Also try clicking inner trigger if panel didn't open
+    var trigger = dropdownEl.querySelector ? dropdownEl.querySelector('.p-dropdown-trigger') : null;
+    if (trigger) { trigger.click(); await sleep(200); }
 
     // Find dropdown panel (PrimeNG renders overlay at body level)
     var panels = document.querySelectorAll('.p-dropdown-panel, .p-overlay-panel, [class*=dropdown-panel]');
@@ -265,10 +350,13 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
   // Set numeric input value
   async function setNumeric(labelText, val) {
     if (!val || val === '0') return;
-    var container = findField(labelText);
-    if (!container) { diag.fills.push(labelText + ': NOT_FOUND'); return false; }
-    var input = container.querySelector('input');
-    if (!input) { diag.fills.push(labelText + ': NO_INPUT'); return false; }
+    var field = findFieldInput(labelText);
+    if (!field) { diag.fills.push(labelText + ': NOT_FOUND'); return false; }
+    var input = field.el;
+    if (input.tagName !== 'INPUT') {
+      input = field.el.querySelector ? field.el.querySelector('input') || field.el : field.el;
+    }
+    if (!input || input.tagName !== 'INPUT') { diag.fills.push(labelText + ': NO_INPUT_EL'); return false; }
     input.focus();
     input.value = '';
     var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
