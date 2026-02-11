@@ -138,57 +138,12 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       diag.steps.push('has_get_price: ' + hasQuickPricer);
 
       if (!hasQuickPricer) {
-        // Try to find and click Quick Pricer navigation
-        var navClicked = false;
-        var allEls = document.querySelectorAll('a, button, span, div, li, [role=menuitem]');
-        for (var ne = 0; ne < allEls.length; ne++) {
-          var navText = (allEls[ne].textContent || '').trim().toLowerCase();
-          if (navText === 'quick pricer' || navText === 'quick price' || navText === 'add scenario' || navText === 'pricing') {
-            diag.steps.push('clicking_nav: ' + (allEls[ne].textContent || '').trim());
-            allEls[ne].click();
-            navClicked = true;
-            break;
-          }
-        }
-        if (!navClicked) {
-          // Try hamburger/sidebar menu first
-          var menuBtn = document.querySelector('[class*=hamburger], [class*=menu-toggle], [class*=sidebar-toggle], .pi-bars');
-          if (menuBtn) { menuBtn.click(); diag.steps.push('opened_menu'); await sleep(800); }
-          // Search again after menu opened
-          allEls = document.querySelectorAll('a, button, span, div, li, [role=menuitem]');
-          for (var ne2 = 0; ne2 < allEls.length; ne2++) {
-            var navText2 = (allEls[ne2].textContent || '').trim().toLowerCase();
-            if (navText2 === 'quick pricer' || navText2 === 'quick price' || navText2 === 'add scenario' || navText2 === 'pricing') {
-              diag.steps.push('clicking_nav_after_menu: ' + (allEls[ne2].textContent || '').trim());
-              allEls[ne2].click();
-              navClicked = true;
-              break;
-            }
-          }
-        }
-
-        if (navClicked) {
-          // Wait for Quick Pricer form to load after navigation
-          for (var qi = 0; qi < 10; qi++) {
-            await sleep(1500);
-            var qpBody = (document.body.innerText || '');
-            if (qpBody.indexOf('Get Price') >= 0) {
-              diag.steps.push('quick_pricer_loaded_at: ' + ((qi+1)*1.5) + 's');
-              formReady = true;
-              break;
-            }
-          }
-        } else {
-          // Dump nav items for debugging
-          var navDebug = [];
-          var navEls = document.querySelectorAll('a, [role=menuitem], [class*=nav-item], [class*=menu-item]');
-          for (var nd = 0; nd < navEls.length && nd < 15; nd++) {
-            var ndText = (navEls[nd].textContent || '').trim();
-            if (ndText.length > 0 && ndText.length < 40) navDebug.push(ndText);
-          }
-          diag.navItems = navDebug;
-          diag.steps.push('no_quick_pricer_nav');
-        }
+        // After login we're on Lock Desk. Navigate to Quick Pricer via URL.
+        // Schedule navigation back to nex-app (Quick Pricer) and return before nav happens.
+        diag.steps.push('on_lock_desk_navigating_to_qp');
+        setTimeout(function() { window.location.href = '/nex-app'; }, 200);
+        // Return now — the NEXT BQL evaluate step will run on the Quick Pricer page
+        return JSON.stringify({ success: true, needsNextStep: true, rates: [], diag: diag });
       } else {
         formReady = true;
       }
@@ -444,12 +399,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const navScript = buildNavToIframeScript()
     const fillScript = buildFillAndScrapeScript(fieldMap, loannexUser, loannexPassword)
 
+    // Step 6: retry fill script (runs if step 5 navigated to /nex-app after Angular login)
+    const retryWait = `(async function() { await new Promise(r => setTimeout(r, 3000)); return JSON.stringify({ ok: true }); })()`
+    const retryFillScript = buildFillAndScrapeScript(fieldMap, loannexUser, loannexPassword)
+
     const bqlQuery = `mutation FillAndPrice {
   loginPage: goto(url: "${LOANNEX_LOGIN_URL}", waitUntil: networkIdle) { status time }
   login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 8000) { value }
   waitForRedirect: evaluate(content: ${JSON.stringify(waitScript)}, timeout: 8000) { value }
   navToAngular: evaluate(content: ${JSON.stringify(navScript)}, timeout: 10000) { value }
   price: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 45000) { value }
+  waitForQP: evaluate(content: ${JSON.stringify(retryWait)}, timeout: 6000) { value }
+  retryPrice: evaluate(content: ${JSON.stringify(retryFillScript)}, timeout: 45000) { value }
 }`
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
@@ -470,12 +431,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({ success: false, error: 'BQL error' })
     }
 
-    // Parse results
-    let priceData: any = null
-    try {
-      const raw = bqlResult.data?.price?.value
-      priceData = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null
-    } catch { priceData = null }
+    // Parse results — try step 5 (price) first, fall back to step 7 (retryPrice)
+    const safeParseValue = (val: any) => {
+      if (!val) return null
+      try { return typeof val === 'string' ? JSON.parse(val) : val } catch { return null }
+    }
+
+    let priceData = safeParseValue(bqlResult.data?.price?.value)
+
+    // If step 5 indicated it navigated to Quick Pricer, use step 7 results
+    if (!priceData || priceData.needsNextStep || (priceData.rates && priceData.rates.length === 0 && priceData.diag?.steps?.includes('on_lock_desk_navigating_to_qp'))) {
+      const retryData = safeParseValue(bqlResult.data?.retryPrice?.value)
+      if (retryData && retryData.rates) priceData = retryData
+    }
 
     if (!priceData) {
       return res.json({ success: false, error: 'No data from pricing step' })
