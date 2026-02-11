@@ -5,16 +5,15 @@ const LOANNEX_LOGIN_URL = 'https://web.loannex.com/'
 
 export const config = { maxDuration: 60 }
 
-// ================= Login Script (wrapper site) =================
+// ================= Step 2: Login to wrapper =================
 function buildLoginScript(email: string, password: string): string {
   return `(async function() {
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   await sleep(1500);
-  var diag = { url: window.location.href, title: document.title };
   var userInput = document.getElementById('UserName');
   var passwordInput = document.getElementById('Password');
   var loginBtn = document.getElementById('btnSubmit');
-  if (!userInput || !passwordInput) return JSON.stringify({ ok: false, error: 'no_form', diag: diag });
+  if (!userInput || !passwordInput) return JSON.stringify({ ok: false, error: 'no_form' });
   function setInput(el, val) {
     el.focus();
     var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
@@ -31,179 +30,160 @@ function buildLoginScript(email: string, password: string): string {
 })()`
 }
 
-// ================= Discovery Script (main site after login) =================
-function buildDiscoverMainSiteScript(): string {
+// ================= Step 4: Extract iframe URL and navigate =================
+function buildNavToIframeScript(): string {
   return `(async function() {
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  var diag = { steps: [] };
-
-  // Wait for page to load after login redirect
-  await sleep(3000);
-  diag.steps.push('url: ' + window.location.href);
-  diag.steps.push('title: ' + document.title);
-
-  // Check for iframes (the pricing form might be in an iframe)
-  var iframes = document.querySelectorAll('iframe');
-  var iframeList = [];
-  for (var fi = 0; fi < iframes.length; fi++) {
-    iframeList.push({
-      src: (iframes[fi].src || '').substring(0, 200),
-      id: iframes[fi].id || '',
-      name: iframes[fi].name || '',
-      width: iframes[fi].width || iframes[fi].offsetWidth,
-      height: iframes[fi].height || iframes[fi].offsetHeight
-    });
+  await sleep(2000);
+  var iframes = document.getElementsByTagName('iframe');
+  var iframe = null;
+  for (var i = 0; i < iframes.length; i++) {
+    if (iframes[i].src && iframes[i].src.indexOf('loannex') >= 0) { iframe = iframes[i]; break; }
+    if (iframes[i].src && iframes[i].src.indexOf('nex-app') >= 0) { iframe = iframes[i]; break; }
   }
-  diag.steps.push('iframes: ' + iframes.length);
-
-  // Discover ALL form elements on the main page
-  var elements = document.querySelectorAll('input, select, textarea, [role="combobox"], [role="listbox"]');
-  var fields = [];
-  for (var i = 0; i < elements.length; i++) {
-    var el = elements[i];
-    if (el.type === 'hidden') continue;
-    var label = '';
-    var labelEl = el.closest('label') || document.querySelector('label[for="' + el.id + '"]');
-    if (labelEl) label = (labelEl.textContent || '').trim();
-    if (!label && el.previousElementSibling) label = (el.previousElementSibling.textContent || '').trim();
-    if (!label && el.parentElement) {
-      var sib = el.parentElement.querySelector('label, .label, span');
-      if (sib && sib !== el) label = (sib.textContent || '').trim();
-    }
-    var opts;
-    if (el.tagName === 'SELECT') {
-      opts = [];
-      for (var j = 0; j < el.options.length && j < 25; j++) opts.push({ v: el.options[j].value, t: el.options[j].text });
-    }
-    fields.push({
-      tag: el.tagName, id: el.id || '', name: el.name || '', type: el.type || '',
-      label: label.substring(0, 60), placeholder: el.placeholder || '',
-      value: (el.value || '').substring(0, 40),
-      className: (el.className || '').substring(0, 80),
-      options: opts
-    });
+  if (!iframe && iframes.length > 0) iframe = iframes[0];
+  if (iframe && iframe.src && iframe.src.length > 10) {
+    window.location.href = iframe.src;
+    await sleep(500);
+    return JSON.stringify({ ok: true, url: iframe.src });
   }
-
-  // Discover buttons
-  var buttons = document.querySelectorAll('button, input[type=submit], a.btn, [role="button"]');
-  var btnList = [];
-  for (var b = 0; b < buttons.length && b < 30; b++) {
-    btnList.push({
-      tag: buttons[b].tagName, text: (buttons[b].textContent || '').trim().substring(0, 50),
-      id: buttons[b].id || '', className: (buttons[b].className || '').substring(0, 80)
-    });
-  }
-
-  // Discover links/navigation
-  var links = document.querySelectorAll('a[href]');
-  var linkList = [];
-  for (var l = 0; l < links.length && l < 40; l++) {
-    var lt = (links[l].textContent || '').trim();
-    if (lt.length > 0 && lt.length < 60) {
-      linkList.push({ text: lt, href: links[l].getAttribute('href').substring(0, 120) });
-    }
-  }
-
-  // Body text preview
-  var bodyText = (document.body.innerText || '').substring(0, 3000);
-
-  return JSON.stringify({
-    fields: fields, fieldCount: fields.length,
-    buttons: btnList, buttonCount: btnList.length,
-    links: linkList, iframes: iframeList,
-    bodyPreview: bodyText,
-    diag: diag
-  });
+  return JSON.stringify({ ok: false, error: 'no_iframe' });
 })()`
 }
 
-// ================= Form Fill + Scrape Script =================
-function buildFillAndScrapeScript(formValues: Record<string, any>): string {
-  const valJson = JSON.stringify(formValues)
+// ================= Step 5: Angular login + discover Quick Pricer nav =================
+function buildAngularDiscoverScript(email: string, password: string): string {
   return `(async function() {
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   var diag = { steps: [] };
-  var vals = ${valJson};
 
-  await sleep(3000);
-  diag.steps.push('url: ' + window.location.href);
+  // Poll for Angular login form or pricing form
+  var usernameField = null;
+  var passwordField = null;
+  var pricingReady = false;
+  for (var w = 0; w < 10; w++) {
+    await sleep(1500);
+    usernameField = document.getElementById('username');
+    passwordField = document.getElementById('password');
+    var allInputs = document.querySelectorAll('input:not([type=hidden]), select');
+    if (usernameField && passwordField) {
+      diag.steps.push('login_form_at: ' + ((w+1)*1.5) + 's');
+      break;
+    }
+    if (allInputs.length > 5) {
+      diag.steps.push('form_ready_at: ' + ((w+1)*1.5) + 's, fields: ' + allInputs.length);
+      pricingReady = true;
+      break;
+    }
+  }
 
-  // Helper to set form values
-  function setVal(id, val) {
-    var el = document.getElementById(id) || document.querySelector('[name="' + id + '"]');
-    if (!el) { diag.steps.push('NOT_FOUND: ' + id); return false; }
-    if (el.tagName === 'SELECT') {
-      el.value = val;
-      el.dispatchEvent(new Event('change', {bubbles: true}));
-    } else {
-      el.focus();
-      var setter = Object.getOwnPropertyDescriptor(
-        el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype,
-        'value'
-      ).set;
+  // Angular login if needed
+  if (usernameField && passwordField) {
+    function setInput(el, val) {
+      el.focus(); el.value = '';
+      el.dispatchEvent(new Event('focus', {bubbles: true}));
+      var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
       if (setter) setter.call(el, val);
       el.dispatchEvent(new Event('input', {bubbles: true}));
       el.dispatchEvent(new Event('change', {bubbles: true}));
       el.dispatchEvent(new Event('blur', {bubbles: true}));
     }
-    diag.steps.push('SET: ' + id + ' = ' + val);
-    return true;
-  }
+    setInput(usernameField, '${email}');
+    await sleep(300);
+    setInput(passwordField, '${password}');
+    await sleep(300);
+    var signInBtn = document.querySelector('button.login-button') || document.querySelector('button');
+    if (signInBtn) { signInBtn.click(); diag.steps.push('login_clicked'); }
 
-  // Fill form fields (selectors TBD from discovery)
-  var keys = Object.keys(vals);
-  for (var k = 0; k < keys.length; k++) {
-    setVal(keys[k], vals[keys[k]]);
-    await sleep(100);
-  }
-
-  // Click search/price button (selector TBD)
-  var searchBtn = document.querySelector('#btnSearch') ||
-    document.querySelector('button[type=submit]') ||
-    document.querySelector('input[type=submit]');
-  if (searchBtn) {
-    diag.steps.push('clicking: ' + (searchBtn.id || searchBtn.textContent || '').substring(0, 30));
-    searchBtn.click();
-  } else {
-    diag.steps.push('no_search_button');
-  }
-
-  // Wait for results table
-  for (var attempt = 0; attempt < 20; attempt++) {
-    await sleep(1500);
-    var rows = document.querySelectorAll('table tr, .results-row, [class*=result]');
-    if (rows.length > 3) {
-      diag.steps.push('results_at: ' + ((attempt+1)*1.5) + 's, rows: ' + rows.length);
-      break;
+    // Wait for app to load after login
+    for (var i = 0; i < 10; i++) {
+      await sleep(1500);
+      var inputs = document.querySelectorAll('input:not([type=hidden]), select');
+      if (inputs.length > 5) { diag.steps.push('app_loaded_at: ' + ((i+1)*1.5) + 's, fields: ' + inputs.length); break; }
     }
   }
-  await sleep(1000);
 
-  // Scrape results table
-  var tables = document.querySelectorAll('table');
-  var rates = [];
-  for (var ti = 0; ti < tables.length; ti++) {
-    var trs = tables[ti].querySelectorAll('tr');
-    if (trs.length < 2) continue;
-    // Get headers
-    var ths = trs[0].querySelectorAll('th, td');
-    var headers = [];
-    for (var h = 0; h < ths.length; h++) headers.push((ths[h].textContent || '').trim());
-    // Get data rows
-    for (var ri = 1; ri < trs.length && ri < 50; ri++) {
-      var tds = trs[ri].querySelectorAll('td');
-      if (tds.length < 3) continue;
-      var row = {};
-      for (var ci = 0; ci < tds.length && ci < headers.length; ci++) {
-        row[headers[ci] || 'col' + ci] = (tds[ci].textContent || '').trim();
+  diag.steps.push('url: ' + window.location.href);
+  diag.steps.push('title: ' + document.title);
+
+  // Search for ALL clickable navigation items
+  var navItems = [];
+  var allEls = document.querySelectorAll('a, button, [role="menuitem"], [role="button"], li, span, div');
+  for (var n = 0; n < allEls.length; n++) {
+    var el = allEls[n];
+    var text = '';
+    // Get direct text content (not children)
+    for (var c = 0; c < el.childNodes.length; c++) {
+      if (el.childNodes[c].nodeType === 3) text += el.childNodes[c].textContent;
+    }
+    text = text.trim();
+    if (!text) text = (el.textContent || '').trim();
+    if (text.length > 0 && text.length < 40) {
+      var tag = el.tagName;
+      var cls = (el.className || '').substring(0, 60);
+      // Only include potentially clickable/nav items
+      if (tag === 'A' || tag === 'BUTTON' || cls.indexOf('nav') >= 0 || cls.indexOf('menu') >= 0 ||
+          cls.indexOf('item') >= 0 || cls.indexOf('link') >= 0 || cls.indexOf('sidebar') >= 0 ||
+          el.getAttribute('role') || el.onclick || el.getAttribute('routerlink')) {
+        navItems.push({ tag: tag, text: text.substring(0, 40), cls: cls, id: el.id || '', href: el.getAttribute('href') || el.getAttribute('routerlink') || '' });
       }
-      rates.push(row);
     }
-    if (rates.length > 0) break; // use first table with data
   }
 
-  diag.steps.push('scraped: ' + rates.length + ' rows');
-  return JSON.stringify({ success: true, rates: rates, diag: diag });
+  // Search specifically for "Quick Pricer" or "Pricing" or "Search" elements
+  var pricerElements = [];
+  var allElements = document.querySelectorAll('*');
+  for (var p = 0; p < allElements.length; p++) {
+    var txt = (allElements[p].textContent || '').trim().toLowerCase();
+    if (txt.length < 50 && (txt.indexOf('quick') >= 0 || txt.indexOf('pricer') >= 0 || txt.indexOf('pricing') >= 0 || txt.indexOf('scenario') >= 0)) {
+      pricerElements.push({
+        tag: allElements[p].tagName,
+        text: (allElements[p].textContent || '').trim().substring(0, 50),
+        cls: (allElements[p].className || '').substring(0, 60),
+        id: allElements[p].id || '',
+        routerLink: allElements[p].getAttribute('routerlink') || '',
+        clickable: !!(allElements[p].onclick || allElements[p].getAttribute('href') || allElements[p].getAttribute('routerlink'))
+      });
+    }
+  }
+
+  // Also check for Angular router-link attributes
+  var routerLinks = document.querySelectorAll('[routerlink], [ng-reflect-router-link]');
+  var routes = [];
+  for (var r = 0; r < routerLinks.length; r++) {
+    routes.push({
+      tag: routerLinks[r].tagName,
+      text: (routerLinks[r].textContent || '').trim().substring(0, 40),
+      route: routerLinks[r].getAttribute('routerlink') || routerLinks[r].getAttribute('ng-reflect-router-link') || ''
+    });
+  }
+
+  // Dump form fields on current page
+  var formFields = [];
+  var inputs = document.querySelectorAll('input:not([type=hidden]), select, textarea');
+  for (var f = 0; f < inputs.length; f++) {
+    var fEl = inputs[f];
+    var label = '';
+    var labelEl = fEl.closest('label') || document.querySelector('label[for="' + fEl.id + '"]');
+    if (labelEl) label = (labelEl.textContent || '').trim();
+    if (!label) label = fEl.getAttribute('aria-label') || fEl.getAttribute('placeholder') || '';
+    formFields.push({
+      tag: fEl.tagName, id: fEl.id || '', name: fEl.name || '', type: fEl.type || '',
+      label: label.substring(0, 40), value: (fEl.value || '').substring(0, 30)
+    });
+  }
+
+  // Body text preview
+  var bodyPreview = (document.body.innerText || '').substring(0, 2000);
+
+  return JSON.stringify({
+    navItems: navItems.slice(0, 30),
+    pricerElements: pricerElements.slice(0, 15),
+    routerLinks: routes,
+    formFields: formFields,
+    bodyPreview: bodyPreview,
+    diag: diag
+  });
 })()`
 }
 
@@ -224,26 +204,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const loannexPassword = process.env.LOANNEX_PASSWORD || ''
   if (!loannexUser || !loannexPassword) return res.json({ success: false, error: 'Credentials not configured' })
 
-  const isDiscovery = req.query.discover === 'true'
-
   try {
     const loginScript = buildLoginScript(loannexUser, loannexPassword)
     const waitScript = `(async function() { await new Promise(r => setTimeout(r, 5000)); return JSON.stringify({ ok: true }); })()`
+    const navScript = buildNavToIframeScript()
+    const discoverScript = buildAngularDiscoverScript(loannexUser, loannexPassword)
 
-    let mainScript: string
-    if (isDiscovery) {
-      mainScript = buildDiscoverMainSiteScript()
-    } else {
-      // TODO: map form fields after discovery reveals selectors
-      mainScript = buildDiscoverMainSiteScript() // temp: discovery for now
-    }
-
-    // 3-step BQL: goto login → fill+click → wait for redirect → discover/scrape main site
+    // 5-step BQL:
+    // 1. goto wrapper login page
+    // 2. fill + click login (setTimeout avoids nav error)
+    // 3. wait for redirect (expected error)
+    // 4. extract iframe URL + navigate (expected error)
+    // 5. on Angular app: login + discover Quick Pricer nav
     const bqlQuery = `mutation LoginAndDiscover {
   loginPage: goto(url: "${LOANNEX_LOGIN_URL}", waitUntil: networkIdle) { status time }
   login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 8000) { value }
   waitForRedirect: evaluate(content: ${JSON.stringify(waitScript)}, timeout: 8000) { value }
-  main: evaluate(content: ${JSON.stringify(mainScript)}, timeout: 40000) { value }
+  navToAngular: evaluate(content: ${JSON.stringify(navScript)}, timeout: 10000) { value }
+  discover: evaluate(content: ${JSON.stringify(discoverScript)}, timeout: 40000) { value }
 }`
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
@@ -264,12 +242,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({ success: false, error: 'BQL error', debug: bqlResult.errors })
     }
 
-    // Parse main step result
-    let mainData: any = null
+    // Parse discover step result
+    let discoverData: any = null
     try {
-      const raw = bqlResult.data?.main?.value
-      mainData = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null
-    } catch { mainData = null }
+      const raw = bqlResult.data?.discover?.value
+      discoverData = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null
+    } catch { discoverData = null }
 
     const loginData = (() => {
       try {
@@ -280,9 +258,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.json({
       success: true,
-      mode: isDiscovery ? 'discovery' : 'pricing',
+      mode: 'discovery',
       login: loginData,
-      data: mainData,
+      data: discoverData,
       debug: { keys: Object.keys(bqlResult.data || {}), errors: bqlResult.errors || null }
     })
   } catch (error) {
