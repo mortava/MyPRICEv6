@@ -323,25 +323,60 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const waitScript = `(async function() { await new Promise(r => setTimeout(r, 5000)); return JSON.stringify({ waited: true }); })()`
 
-    // After wrapper login, page auto-redirects to Angular app at webapp.loannex.com
-    // Angular app has its OWN login form (username/password) — must login again
+    // After wrapper login, we land on dashboard with iframe. Navigate to iframe URL, then handle Angular login.
+    const navigateToIframeScript = `(async function() {
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  var diag = { steps: [] };
+  diag.steps.push('url: ' + window.location.href);
+
+  // Wait for dashboard to load
+  await sleep(2000);
+
+  // Check for iframe (Angular app embedded in dashboard)
+  var iframe = document.querySelector('iframe[id*=loannex], iframe[src*=webapp.loannex], iframe[src*=nex-app], iframe');
+  if (iframe && iframe.src && iframe.src.indexOf('loannex') >= 0) {
+    diag.steps.push('iframe_found: ' + iframe.src.substring(0, 100));
+    // Navigate to iframe URL directly
+    window.location.href = iframe.src;
+    await sleep(500);
+    return JSON.stringify({ navigating: iframe.src, diag: diag });
+  }
+
+  // Maybe already on Angular app (auto-redirect happened)
+  if (window.location.href.indexOf('webapp.loannex') >= 0) {
+    diag.steps.push('already_on_angular_app');
+    return JSON.stringify({ alreadyOnApp: true, diag: diag });
+  }
+
+  // Look for any iframe
+  var allIframes = document.querySelectorAll('iframe');
+  var iframeInfo = [];
+  for (var i = 0; i < allIframes.length; i++) {
+    iframeInfo.push({ src: (allIframes[i].src || '').substring(0, 150), id: allIframes[i].id || '' });
+  }
+  diag.steps.push('no_target_iframe');
+  diag.iframes = iframeInfo;
+  diag.bodyPreview = (document.body.innerText || '').substring(0, 500);
+  return JSON.stringify({ error: 'no_iframe_found', diag: diag });
+})()`
+
+    // After navigating to Angular app, handle login + discover pricing form
     const angularLoginAndDiscoverScript = `(async function() {
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   var diag = { steps: [] };
   diag.steps.push('url: ' + window.location.href);
 
-  // Wait for page to stabilize after redirect
-  await sleep(2000);
+  // Wait for Angular app to load
+  await sleep(3000);
+  diag.steps.push('title: ' + document.title);
 
   // Check if we're on Angular login page
   var usernameField = document.getElementById('username');
   var passwordField = document.getElementById('password');
-  var signInBtn = document.querySelector('button.login-button') || document.querySelector('button');
 
   if (usernameField && passwordField) {
     diag.steps.push('angular_login_detected');
 
-    // Fill Angular login credentials
     function setInput(el, val) {
       el.focus();
       el.value = '';
@@ -358,31 +393,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     setInput(passwordField, '${loannexPassword}');
     await sleep(300);
 
-    // Click Sign In
+    var signInBtn = document.querySelector('button.login-button') || document.querySelector('button');
     if (signInBtn) {
       diag.steps.push('clicking_sign_in: ' + (signInBtn.textContent || '').trim());
       signInBtn.click();
     }
 
-    // Wait for pricing form to load after Angular login
-    for (var i = 0; i < 20; i++) {
+    // Wait for pricing form to load after login
+    for (var i = 0; i < 15; i++) {
       await sleep(1500);
       var inputs = document.querySelectorAll('input:not([type=hidden]), select, textarea');
-      var bodyText = (document.body.innerText || '');
-      // Pricing form should have many more fields than the login form (>5)
       if (inputs.length > 5) {
         diag.steps.push('pricing_form_at: ' + ((i+1)*1.5) + 's, fields: ' + inputs.length);
         break;
       }
-      // Check for error
+      var bodyText = (document.body.innerText || '');
       if (bodyText.indexOf('Invalid') >= 0 || bodyText.indexOf('incorrect') >= 0) {
         diag.steps.push('login_error_at: ' + ((i+1)*1.5) + 's');
         return JSON.stringify({ error: 'angular_login_failed', bodyPreview: bodyText.substring(0, 500), diag: diag });
       }
     }
   } else {
-    diag.steps.push('no_login_form_found');
-    // Maybe already authenticated, wait for pricing form
+    diag.steps.push('no_login_form - maybe already authenticated');
     for (var i = 0; i < 10; i++) {
       await sleep(1000);
       var inputs = document.querySelectorAll('input:not([type=hidden]), select, textarea');
@@ -394,7 +426,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Discover all form fields
-  var elements = document.querySelectorAll('input:not([type=hidden]), select, textarea, [role="combobox"], [role="listbox"], [role="option"]');
+  var elements = document.querySelectorAll('input:not([type=hidden]), select, textarea, [role="combobox"], [role="listbox"]');
   var fields = [];
   for (var i = 0; i < elements.length; i++) {
     var el = elements[i];
@@ -406,7 +438,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       var sib = el.parentElement.querySelector('label, .label, span, .field-label, .mat-label');
       if (sib && sib !== el) label = (sib.textContent || '').trim();
     }
-    // Also check aria-label and Angular material labels
     if (!label) label = el.getAttribute('aria-label') || '';
     if (!label) label = el.getAttribute('data-placeholder') || '';
     var opts;
@@ -417,7 +448,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     fields.push({ tag: el.tagName, id: el.id || '', name: el.name || '', type: el.type || '', label: label.substring(0, 60), placeholder: el.placeholder || '', value: (el.value || '').substring(0, 40), className: (el.className || '').substring(0, 80), options: opts });
   }
 
-  // Discover buttons
   var buttons = document.querySelectorAll('button, input[type=submit], a.btn, [role="button"]');
   var btnList = [];
   for (var b = 0; b < buttons.length && b < 30; b++) {
@@ -428,14 +458,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return JSON.stringify({ fields: fields, buttons: btnList, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
 })()`
 
-    // Single BQL call - all in one browser session
-    // Flow: goto wrapper login → fill+click → (auto-redirect to Angular app) → Angular login → discover pricing form
-    // BQL continues executing after step errors (confirmed by testing)
+    // Single BQL call with 5 steps:
+    // 1. goto wrapper login page
+    // 2. fill + click login (setTimeout to avoid nav error)
+    // 3. wait 5s for redirect to dashboard (expected error — page navigated)
+    // 4. extract iframe URL + navigate to Angular app (expected error — page navigates)
+    // 5. on Angular app: login + discover pricing form fields
     bqlQuery = `mutation LoginAndDiscover {
   loginPage: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
   login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 8000) { value }
   waitForRedirect: evaluate(content: ${JSON.stringify(waitScript)}, timeout: 8000) { value }
-  discover: evaluate(content: ${JSON.stringify(angularLoginAndDiscoverScript)}, timeout: 45000) { value }
+  navToAngular: evaluate(content: ${JSON.stringify(navigateToIframeScript)}, timeout: 10000) { value }
+  discover: evaluate(content: ${JSON.stringify(angularLoginAndDiscoverScript)}, timeout: 35000) { value }
 }`
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
@@ -473,12 +507,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Parse results from each BQL step
     const loginData = safeParseValue(bqlResult.data?.login?.value)
+    const navData = safeParseValue(bqlResult.data?.navToAngular?.value)
     const discoverData = safeParseValue(bqlResult.data?.discover?.value)
 
     return res.json({
       success: true,
       mode: isDiscovery ? 'discovery' : 'full',
       login: loginData,
+      navigation: navData,
       discovery: discoverData,
       debug: { keys: Object.keys(bqlResult.data || {}), errors: bqlResult.errors || null }
     })
