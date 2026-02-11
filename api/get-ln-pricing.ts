@@ -318,88 +318,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Phase 1: Login to Loannex
     const loginScript = buildLoginScript(loannexUser, loannexPassword)
-    const discoveryScript = buildDiscoveryScript()
 
-    // Build BQL query - login then either discover or fill+scrape
     let bqlQuery: string
 
-    // Single-BQL approach (one browser session):
-    // 1. goto login → fill+click(setTimeout) → sleep(wait for nav) → goto wrapper → extract iframe URL
-    // 2. Then a second BQL call to the Angular app URL (same token works standalone)
     const waitScript = `(async function() { await new Promise(r => setTimeout(r, 5000)); return JSON.stringify({ waited: true }); })()`
 
-    // Try to access iframe contents directly (may work if Browserless has relaxed CORS)
-    // If cross-origin blocked, fall back to returning just the iframe URL
-    const extractIframeScript = `(async function() {
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  await sleep(2000);
-  var iframe = document.getElementById('loannex-angular-iframe');
-  if (!iframe) return JSON.stringify({ error: 'no iframe', body: (document.body.innerText || '').substring(0, 300) });
-  var iframeUrl = iframe.src;
-
-  // Wait for iframe to load
-  await sleep(5000);
-
-  // Try cross-origin access to iframe contents
-  try {
-    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-    var iframeBody = (iframeDoc.body.innerText || '').substring(0, 1000);
-    var iframeInputs = iframeDoc.querySelectorAll('input:not([type=hidden]), select, textarea');
-    var fields = [];
-    for (var i = 0; i < iframeInputs.length; i++) {
-      var el = iframeInputs[i];
-      var label = '';
-      var labelEl = el.closest('label') || iframeDoc.querySelector('label[for="' + el.id + '"]');
-      if (labelEl) label = (labelEl.textContent || '').trim();
-      if (!label && el.parentElement) {
-        var sib = el.parentElement.querySelector('label, .label, span');
-        if (sib) label = (sib.textContent || '').trim();
-      }
-      var opts;
-      if (el.tagName === 'SELECT') {
-        opts = [];
-        for (var j = 0; j < el.options.length && j < 15; j++) opts.push({ v: el.options[j].value, t: el.options[j].text });
-      }
-      fields.push({ tag: el.tagName, id: el.id, name: el.name, type: el.type, label: label.substring(0, 50), placeholder: el.placeholder || '', value: (el.value || '').substring(0, 30), options: opts });
-    }
-    return JSON.stringify({ iframeUrl: iframeUrl, crossOrigin: false, iframeBody: iframeBody, fields: fields, fieldCount: fields.length });
-  } catch(e) {
-    return JSON.stringify({ iframeUrl: iframeUrl, crossOrigin: true, error: e.message });
-  }
-})()`
-
-    // Navigate to Angular app after extracting iframe URL
-    const navToAngularScript = `(async function() {
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  await sleep(2000);
-  var iframe = document.getElementById('loannex-angular-iframe');
-  if (!iframe || !iframe.src) return JSON.stringify({ error: 'no iframe' });
-  var url = iframe.src;
-  // Navigate entire page to Angular app URL (will destroy this evaluate context — expected)
-  window.location.href = url;
-  await sleep(500);
-  return JSON.stringify({ navigating: url });
-})()`
-
-    // Wait for Angular app to bootstrap and discover its fields
-    const waitAndDiscoverScript = `(async function() {
+    // After wrapper login, page auto-redirects to Angular app at webapp.loannex.com
+    // Angular app has its OWN login form (username/password) — must login again
+    const angularLoginAndDiscoverScript = `(async function() {
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   var diag = { steps: [] };
   diag.steps.push('url: ' + window.location.href);
-  diag.steps.push('title: ' + document.title);
 
-  // Wait for Angular app to render form fields
-  for (var i = 0; i < 15; i++) {
-    await sleep(1000);
-    var inputs = document.querySelectorAll('input:not([type=hidden]), select, textarea');
-    if (inputs.length > 2) {
-      diag.steps.push('ready_at: ' + (i+1) + 's, fields: ' + inputs.length);
-      break;
+  // Wait for page to stabilize after redirect
+  await sleep(2000);
+
+  // Check if we're on Angular login page
+  var usernameField = document.getElementById('username');
+  var passwordField = document.getElementById('password');
+  var signInBtn = document.querySelector('button.login-button') || document.querySelector('button');
+
+  if (usernameField && passwordField) {
+    diag.steps.push('angular_login_detected');
+
+    // Fill Angular login credentials
+    function setInput(el, val) {
+      el.focus();
+      el.value = '';
+      el.dispatchEvent(new Event('focus', {bubbles: true}));
+      var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      if (setter) setter.call(el, val);
+      el.dispatchEvent(new Event('input', {bubbles: true}));
+      el.dispatchEvent(new Event('change', {bubbles: true}));
+      el.dispatchEvent(new Event('blur', {bubbles: true}));
+    }
+
+    setInput(usernameField, '${loannexUser}');
+    await sleep(300);
+    setInput(passwordField, '${loannexPassword}');
+    await sleep(300);
+
+    // Click Sign In
+    if (signInBtn) {
+      diag.steps.push('clicking_sign_in: ' + (signInBtn.textContent || '').trim());
+      signInBtn.click();
+    }
+
+    // Wait for pricing form to load after Angular login
+    for (var i = 0; i < 20; i++) {
+      await sleep(1500);
+      var inputs = document.querySelectorAll('input:not([type=hidden]), select, textarea');
+      var bodyText = (document.body.innerText || '');
+      // Pricing form should have many more fields than the login form (>5)
+      if (inputs.length > 5) {
+        diag.steps.push('pricing_form_at: ' + ((i+1)*1.5) + 's, fields: ' + inputs.length);
+        break;
+      }
+      // Check for error
+      if (bodyText.indexOf('Invalid') >= 0 || bodyText.indexOf('incorrect') >= 0) {
+        diag.steps.push('login_error_at: ' + ((i+1)*1.5) + 's');
+        return JSON.stringify({ error: 'angular_login_failed', bodyPreview: bodyText.substring(0, 500), diag: diag });
+      }
+    }
+  } else {
+    diag.steps.push('no_login_form_found');
+    // Maybe already authenticated, wait for pricing form
+    for (var i = 0; i < 10; i++) {
+      await sleep(1000);
+      var inputs = document.querySelectorAll('input:not([type=hidden]), select, textarea');
+      if (inputs.length > 3) {
+        diag.steps.push('form_ready_at: ' + (i+1) + 's, fields: ' + inputs.length);
+        break;
+      }
     }
   }
 
   // Discover all form fields
-  var elements = document.querySelectorAll('input:not([type=hidden]), select, textarea, [role="combobox"], [role="listbox"]');
+  var elements = document.querySelectorAll('input:not([type=hidden]), select, textarea, [role="combobox"], [role="listbox"], [role="option"]');
   var fields = [];
   for (var i = 0; i < elements.length; i++) {
     var el = elements[i];
@@ -408,36 +403,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (labelEl) label = (labelEl.textContent || '').trim();
     if (!label && el.previousElementSibling) label = (el.previousElementSibling.textContent || '').trim();
     if (!label && el.parentElement) {
-      var sib = el.parentElement.querySelector('label, .label, span, .field-label');
+      var sib = el.parentElement.querySelector('label, .label, span, .field-label, .mat-label');
       if (sib && sib !== el) label = (sib.textContent || '').trim();
     }
+    // Also check aria-label and Angular material labels
+    if (!label) label = el.getAttribute('aria-label') || '';
+    if (!label) label = el.getAttribute('data-placeholder') || '';
     var opts;
     if (el.tagName === 'SELECT') {
       opts = [];
       for (var j = 0; j < el.options.length && j < 20; j++) opts.push({ v: el.options[j].value, t: el.options[j].text });
     }
-    fields.push({ tag: el.tagName, id: el.id || '', name: el.name || '', type: el.type || '', label: label.substring(0, 60), placeholder: el.placeholder || '', value: (el.value || '').substring(0, 40), options: opts });
+    fields.push({ tag: el.tagName, id: el.id || '', name: el.name || '', type: el.type || '', label: label.substring(0, 60), placeholder: el.placeholder || '', value: (el.value || '').substring(0, 40), className: (el.className || '').substring(0, 80), options: opts });
   }
 
   // Discover buttons
-  var buttons = document.querySelectorAll('button, input[type=submit], a.btn');
+  var buttons = document.querySelectorAll('button, input[type=submit], a.btn, [role="button"]');
   var btnList = [];
-  for (var b = 0; b < buttons.length && b < 20; b++) {
-    btnList.push({ tag: buttons[b].tagName, text: (buttons[b].textContent || '').trim().substring(0, 40), id: buttons[b].id || '', className: (buttons[b].className || '').substring(0, 60) });
+  for (var b = 0; b < buttons.length && b < 30; b++) {
+    btnList.push({ tag: buttons[b].tagName, text: (buttons[b].textContent || '').trim().substring(0, 50), id: buttons[b].id || '', className: (buttons[b].className || '').substring(0, 80) });
   }
 
-  var bodyText = (document.body.innerText || '').substring(0, 1500);
+  var bodyText = (document.body.innerText || '').substring(0, 2000);
   return JSON.stringify({ fields: fields, buttons: btnList, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
 })()`
 
     // Single BQL call - all in one browser session
+    // Flow: goto wrapper login → fill+click → (auto-redirect to Angular app) → Angular login → discover pricing form
     // BQL continues executing after step errors (confirmed by testing)
     bqlQuery = `mutation LoginAndDiscover {
   loginPage: goto(url: "${LOANNEX_URL}", waitUntil: networkIdle) { status time }
   login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 8000) { value }
-  waitNav: evaluate(content: ${JSON.stringify(waitScript)}, timeout: 8000) { value }
-  navToApp: evaluate(content: ${JSON.stringify(navToAngularScript)}, timeout: 10000) { value }
-  discover: evaluate(content: ${JSON.stringify(waitAndDiscoverScript)}, timeout: 25000) { value }
+  waitForRedirect: evaluate(content: ${JSON.stringify(waitScript)}, timeout: 8000) { value }
+  discover: evaluate(content: ${JSON.stringify(angularLoginAndDiscoverScript)}, timeout: 45000) { value }
 }`
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
@@ -475,14 +473,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Parse results from each BQL step
     const loginData = safeParseValue(bqlResult.data?.login?.value)
-    const navData = safeParseValue(bqlResult.data?.navToApp?.value)
     const discoverData = safeParseValue(bqlResult.data?.discover?.value)
 
     return res.json({
       success: true,
       mode: isDiscovery ? 'discovery' : 'full',
       login: loginData,
-      navigation: navData,
       discovery: discoverData,
       debug: { keys: Object.keys(bqlResult.data || {}), errors: bqlResult.errors || null }
     })
