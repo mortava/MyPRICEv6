@@ -471,22 +471,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     btnList.push({ tag: buttons[b].tagName, text: (buttons[b].textContent || '').trim().substring(0, 50), id: buttons[b].id || '', className: (buttons[b].className || '').substring(0, 80) });
   }
 
-  // Discover navigation links (sidebar, navbar, menu items)
-  var navLinks = document.querySelectorAll('a[href], a[routerlink], [routerlink], nav a, .sidebar a, .nav-item a, .menu-item, li a');
+  // Discover ALL clickable/navigation elements (Angular uses custom components, not <a href>)
+  var navEls = document.querySelectorAll('a, [routerlink], [ng-reflect-router-link], li, .p-menuitem, .p-panelmenu-header, .nav-link, .sidebar-item, [class*=menu], [class*=nav-item], [class*=sidebar]');
   var linkList = [];
-  for (var nl = 0; nl < navLinks.length && nl < 50; nl++) {
-    var linkText = (navLinks[nl].textContent || '').trim();
-    if (linkText.length > 0 && linkText.length < 80) {
+  var seenTexts = {};
+  for (var nl = 0; nl < navEls.length && nl < 80; nl++) {
+    var linkText = (navEls[nl].textContent || '').trim().replace(/\\s+/g, ' ');
+    if (linkText.length > 0 && linkText.length < 80 && !seenTexts[linkText]) {
+      seenTexts[linkText] = true;
       linkList.push({
         text: linkText,
-        href: (navLinks[nl].getAttribute('href') || '').substring(0, 120),
-        routerLink: (navLinks[nl].getAttribute('routerlink') || '').substring(0, 120),
-        className: (navLinks[nl].className || '').substring(0, 80)
+        tag: navEls[nl].tagName,
+        href: (navEls[nl].getAttribute('href') || ''),
+        routerLink: (navEls[nl].getAttribute('routerlink') || navEls[nl].getAttribute('ng-reflect-router-link') || ''),
+        className: (navEls[nl].className || '').substring(0, 100)
       });
     }
   }
 
-  var bodyText = (document.body.innerText || '').substring(0, 2000);
+  var bodyText = (document.body.innerText || '').substring(0, 3000);
   return JSON.stringify({ fields: fields, buttons: btnList, navLinks: linkList, bodyPreview: bodyText, fieldCount: fields.length, diag: diag });
 })()`
 
