@@ -27,6 +27,8 @@ const FIELD_IDS = {
   shortTermRental: '688a8c972c7c7a45f870c4e5',
   firstTimeInvestor: '64062719bcd1bf2ef39bb120',
   crossCollateralized: '697b9d8d942d1b374b520aa6',
+  // Dynamic fields (appear after Cashout Refinance selection)
+  cashoutAmount: '625d029781b3b41288723f5a',
 }
 
 // ================= Form Value Mappings =================
@@ -102,6 +104,8 @@ function mapFormValues(formData: any) {
     prepayPlanType: prepayTypeMap[formData.prepayType] || '5% Fixed',
     isCrossCollateralized: !!formData.isCrossCollateralized,
     shortTermRental: 'No',
+    isCashout: formData.loanPurpose === 'cashout',
+    cashoutAmount: String(Number(formData.cashoutAmount) || 0),
   }
 }
 
@@ -122,10 +126,15 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
     `setVal('${FIELD_IDS.zip}', '${values.zip}');`,
     `setVal('${FIELD_IDS.state}', '${values.state}');`,
     `setVal('${FIELD_IDS.loanPurpose}', '${values.loanPurpose}');`,
-    `await sleep(300);`,
+    `await sleep(500);`,
     `setVal('${FIELD_IDS.purchasePrice}', '${values.purchasePrice}');`,
     `setVal('${FIELD_IDS.loanAmount}', '${values.loanAmount}');`,
   ]
+
+  // Cashout amount (dynamic field — appears after selecting Cashout Refinance)
+  if (values.isCashout && Number(values.cashoutAmount) > 0) {
+    fieldSets.push(`setVal('${FIELD_IDS.cashoutAmount}', '${values.cashoutAmount}');`)
+  }
 
   if (values.isDSCR && values.dscrRatio) {
     fieldSets.push(`setVal('${FIELD_IDS.dscrRatio}', '${values.dscrRatio}');`)
