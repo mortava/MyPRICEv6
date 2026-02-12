@@ -314,9 +314,15 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
     // Check for loading spinners still visible
     var spinners = document.querySelectorAll('.spinner, .loading, [class*=spinner], [class*=loading], .fa-spin');
     diag.steps.push('spinners_visible: ' + spinners.length);
-    // Capture form validation state
+    // Capture form validation state — include IDs of invalid fields
     var invalidInputs = document.querySelectorAll('input:invalid, select:invalid, .ng-invalid');
+    var invalidIds = [];
+    for (var ivi = 0; ivi < invalidInputs.length && ivi < 10; ivi++) {
+      var ivEl = invalidInputs[ivi];
+      invalidIds.push({ id: ivEl.id || 'no-id', tag: ivEl.tagName, type: ivEl.type || '', name: (ivEl.name || '').substring(0, 30), val: (ivEl.value || '').substring(0, 20) });
+    }
     diag.steps.push('invalid_inputs: ' + invalidInputs.length);
+    if (invalidIds.length > 0) diag.invalidFields = invalidIds;
     // Capture full body text (more context)
     diag.fullPageText = pageText2.substring(0, 2000);
   }
