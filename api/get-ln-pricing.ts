@@ -103,14 +103,14 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
 
   // Poll for either pricing form (>10 inputs) OR Angular login form
   var formReady = false;
-  for (var w = 0; w < 10; w++) {
-    await sleep(1500);
+  for (var w = 0; w < 6; w++) {
+    await sleep(1000);
     var usernameField = document.getElementById('username');
     var passwordField = document.getElementById('password');
     var allInputs = document.querySelectorAll('input:not([type=hidden])');
 
     if (usernameField && passwordField) {
-      diag.steps.push('angular_login_at: ' + ((w+1)*1.5) + 's');
+      diag.steps.push('angular_login_at: ' + ((w+1)) + 's');
       // Do Angular login
       function setLoginInput(el, val) {
         el.focus(); el.value = '';
@@ -129,7 +129,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       if (signInBtn) { signInBtn.click(); diag.steps.push('login_clicked'); }
 
       // Wait for app to load after login
-      await sleep(3000);
+      await sleep(2000);
       diag.steps.push('post_login_url: ' + window.location.href);
 
       // Check if we landed on Quick Pricer or elsewhere
@@ -165,12 +165,12 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
 
         // Wait for the Quick Pricer form to appear (Angular client-side routing)
         var qpLoaded = false;
-        for (var qw = 0; qw < 10; qw++) {
-          await sleep(1500);
+        for (var qw = 0; qw < 6; qw++) {
+          await sleep(1000);
           var qpInputs = document.querySelectorAll('input:not([type=hidden])');
           var qpText = (document.body.innerText || '');
           if (qpText.indexOf('Get Price') >= 0 && qpInputs.length > 10) {
-            diag.steps.push('qp_loaded_at: ' + ((qw+1)*1.5) + 's, fields: ' + qpInputs.length);
+            diag.steps.push('qp_loaded_at: ' + ((qw+1)) + 's, fields: ' + qpInputs.length);
             qpLoaded = true;
             break;
           }
@@ -191,7 +191,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     }
 
     if (allInputs.length > 10) {
-      diag.steps.push('form_at: ' + ((w+1)*1.5) + 's, fields: ' + allInputs.length);
+      diag.steps.push('form_at: ' + ((w+1)) + 's, fields: ' + allInputs.length);
       formReady = true;
       break;
     }
@@ -450,7 +450,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
 
   // Wait for results table to appear
   var resultsFound = false;
-  for (var attempt = 0; attempt < 20; attempt++) {
+  for (var attempt = 0; attempt < 10; attempt++) {
     await sleep(1500);
     var tables = document.querySelectorAll('table');
     for (var ti = 0; ti < tables.length; ti++) {
@@ -476,7 +476,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     return JSON.stringify({ success: true, rates: [], diag: diag });
   }
 
-  await sleep(1000); // settle
+  await sleep(500); // settle
 
   // Scrape the results table
   var rates = [];
@@ -528,12 +528,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const fieldMap = mapFormToLN(body)
 
     const loginScript = buildLoginScript(loannexUser, loannexPassword)
-    const waitScript = `(async function() { await new Promise(r => setTimeout(r, 5000)); return JSON.stringify({ ok: true }); })()`
+    const waitScript = `(async function() { await new Promise(r => setTimeout(r, 3000)); return JSON.stringify({ ok: true }); })()`
     const navScript = buildNavToIframeScript()
     const fillScript = buildFillAndScrapeScript(fieldMap, loannexUser, loannexPassword)
 
     // Step 6: retry fill script (runs if step 5 navigated to /nex-app after Angular login)
-    const retryWait = `(async function() { await new Promise(r => setTimeout(r, 8000)); return JSON.stringify({ ok: true }); })()`
+    const retryWait = `(async function() { await new Promise(r => setTimeout(r, 3000)); return JSON.stringify({ ok: true }); })()`
     const retryFillScript = buildFillAndScrapeScript(fieldMap, loannexUser, loannexPassword)
 
     const bqlQuery = `mutation FillAndPrice {
@@ -543,7 +543,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   navToAngular: evaluate(content: ${JSON.stringify(navScript)}, timeout: 10000) { value }
   price: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 45000) { value }
   waitForQP: evaluate(content: ${JSON.stringify(retryWait)}, timeout: 6000) { value }
-  retryPrice: evaluate(content: ${JSON.stringify(retryFillScript)}, timeout: 45000) { value }
+  retryPrice: evaluate(content: ${JSON.stringify(retryFillScript)}, timeout: 25000) { value }
 }`
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
