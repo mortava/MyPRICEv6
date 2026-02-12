@@ -27,6 +27,9 @@ function mapFormToLN(body: any): Record<string, string> {
   const propertyValue = String(body.propertyValue || '600000').replace(/,/g, '')
   const creditScore = String(body.creditScore || '740')
 
+  const isDSCR = body.documentationType === 'dscr'
+  const isInvestment = body.occupancyType === 'investment'
+
   return {
     'Purpose': purposeMap[body.loanPurpose] || 'Purchase',
     'Occupancy': occupancyMap[body.occupancyType] || 'Investment',
@@ -40,6 +43,12 @@ function mapFormToLN(body: any): Record<string, string> {
     'FICO': creditScore,
     'DTI': String(body.dti || ''),
     'Escrows': body.impoundType === '3' ? 'No' : 'Yes',
+    // DSCR/Investment-specific fields
+    'DSCR': isDSCR ? String(body.dscrRatio || '1.250').replace('>=', '') : '',
+    'Mo. Rental Income': isDSCR ? String(body.grossRentalIncome || '5000') : '',
+    'Prepay Penalty': isInvestment ? '5 Year' : 'None',
+    'Months Reserves': '12',
+    '# of Financed Properties': isInvestment ? '1' : '',
   }
 }
 
@@ -356,17 +365,17 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
   }
 
   // Fill dropdown fields
-  var dropdowns = ['Purpose', 'Occupancy', 'Property Type', 'Income Doc', 'Citizenship', 'State', 'Escrows'];
+  var dropdowns = ['Purpose', 'Occupancy', 'Property Type', 'Income Doc', 'Citizenship', 'State', 'Escrows', 'Prepay Penalty'];
   for (var di = 0; di < dropdowns.length; di++) {
     var key = dropdowns[di];
     if (fieldMap[key]) {
       await setDropdown(key, fieldMap[key]);
-      await sleep(300);
+      await sleep(200);
     }
   }
 
   // Fill numeric fields
-  var numerics = ['Appraised Value', 'Purchase Price', 'First Lien Amount', 'FICO', 'DTI'];
+  var numerics = ['Appraised Value', 'Purchase Price', 'First Lien Amount', 'FICO', 'DTI', 'DSCR', 'Mo. Rental Income', 'Months Reserves', '# of Financed Properties'];
   for (var ni = 0; ni < numerics.length; ni++) {
     var nkey = numerics[ni];
     if (fieldMap[nkey]) {
@@ -398,27 +407,40 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
   var resultsFound = false;
   for (var attempt = 0; attempt < 10; attempt++) {
     await sleep(1500);
-    var tables = document.querySelectorAll('table');
+    // Check for standard HTML table OR PrimeNG table OR any data grid
+    var tables = document.querySelectorAll('table, p-table, .p-datatable');
     for (var ti = 0; ti < tables.length; ti++) {
       var rows = tables[ti].querySelectorAll('tr');
       if (rows.length > 2) {
-        diag.steps.push('results_at: ' + ((attempt+1)*1.5) + 's, rows: ' + rows.length);
+        diag.steps.push('results_at: ' + ((attempt+1)*1.5) + 's, rows: ' + rows.length + ', tag: ' + tables[ti].tagName);
         resultsFound = true;
         break;
       }
     }
     if (resultsFound) break;
-    // Also check for "no results" text
+    // Check for loading spinners (still waiting)
+    var spinners = document.querySelectorAll('.p-progress-spinner, .loading, [class*=spinner], [class*=loading]');
+    if (spinners.length > 0 && attempt < 9) continue;
+    // Check for "no results" or error text
     var body = (document.body.innerText || '');
-    if (body.indexOf('No results') >= 0 || body.indexOf('no eligible') >= 0 || body.indexOf('No prices') >= 0) {
+    if (body.indexOf('No results') >= 0 || body.indexOf('no eligible') >= 0 || body.indexOf('No prices') >= 0 || body.indexOf('No programs') >= 0) {
       diag.steps.push('no_results_text_at: ' + ((attempt+1)*1.5) + 's');
+      break;
+    }
+    // Check for any new content after Get Price (investor names, rate numbers)
+    if (body.match(/\d+\.\d{3}%/) || body.indexOf('Investor') >= 0) {
+      diag.steps.push('rate_text_detected_at: ' + ((attempt+1)*1.5) + 's');
+      resultsFound = true;
       break;
     }
   }
 
   if (!resultsFound) {
     diag.steps.push('no_results_table');
-    diag.bodyPreview = (document.body.innerText || '').substring(0, 1500);
+    // Capture page text AFTER "Get Price" to see what appeared
+    var fullText = (document.body.innerText || '');
+    var gpIdx = fullText.indexOf('Get Price');
+    diag.afterGetPrice = gpIdx >= 0 ? fullText.substring(gpIdx, gpIdx + 800) : fullText.substring(0, 1500);
     return JSON.stringify({ success: true, rates: [], diag: diag });
   }
 
