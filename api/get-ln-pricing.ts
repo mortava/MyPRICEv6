@@ -281,45 +281,68 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     input.dispatchEvent(new Event('input', {bubbles: true}));
     await sleep(200);
 
-    // Type the search text character by character to trigger autocomplete
-    // Use first 3 chars for faster search, or full text for exact match
+    // Log input context for debugging
+    var ariaCtrl = input.getAttribute('aria-controls') || input.getAttribute('aria-owns') || 'none';
+    var nexField = input.closest('.nex-app-field');
+    diag.fills.push(labelText + ': aria=' + ariaCtrl + ', nex=' + (nexField ? 'yes' : 'no'));
+
+    // Type the search text to trigger autocomplete suggestions
     var searchText = optionText.length > 3 ? optionText.substring(0, 3) : optionText;
     if (setter) setter.call(input, searchText);
     input.dispatchEvent(new Event('input', {bubbles: true}));
     await sleep(600);
 
-    // Find visible autocomplete/popover panel
-    function findPanel() {
-      var selectors = [
-        '.p-autocomplete-panel', '.p-autocomplete-overlay',
-        '.p-overlay-panel', '[class*=autocomplete-panel]',
-        '.p-popover-content', '[role=listbox]',
-        'ul.p-autocomplete-list'
-      ];
-      for (var si = 0; si < selectors.length; si++) {
-        var matches = document.querySelectorAll(selectors[si]);
-        for (var mi = 0; mi < matches.length; mi++) {
-          if (matches[mi].offsetHeight > 0 && matches[mi].offsetWidth > 0) return matches[mi];
+    // Find THIS input's specific autocomplete panel using aria-controls
+    function findMyPanel() {
+      // Method 1: use aria-controls/aria-owns link
+      var panelId = input.getAttribute('aria-controls') || input.getAttribute('aria-owns');
+      if (panelId) {
+        var linked = document.getElementById(panelId);
+        if (linked && linked.offsetHeight > 0) return linked;
+      }
+      // Method 2: find P-POPOVER inside same nex-app-field, check if it has visible content
+      var nexField = input.closest('.nex-app-field');
+      if (nexField) {
+        var popover = nexField.querySelector('p-popover');
+        if (popover) {
+          // PrimeNG popover renders content at body level, linked by ng-tns class
+          var ngClass = '';
+          var classes = (popover.className || '').split(/\s+/);
+          for (var ci2 = 0; ci2 < classes.length; ci2++) {
+            if (classes[ci2].indexOf('ng-tns-') === 0) { ngClass = classes[ci2]; break; }
+          }
+          if (ngClass) {
+            // Find visible overlay with same ng-tns class at body level
+            var overlays = document.querySelectorAll('.' + ngClass + '[role=listbox], .' + ngClass + ' [role=listbox], .' + ngClass + ' ul');
+            for (var ovi = 0; ovi < overlays.length; ovi++) {
+              if (overlays[ovi].offsetHeight > 0) return overlays[ovi];
+            }
+          }
         }
+      }
+      // Method 3: find the most recently visible panel (last resort)
+      var allPanels = document.querySelectorAll('[role=listbox]');
+      for (var api = allPanels.length - 1; api >= 0; api--) {
+        if (allPanels[api].offsetHeight > 0 && allPanels[api].offsetWidth > 0) return allPanels[api];
       }
       return null;
     }
 
-    var panel = findPanel();
+    var panel = findMyPanel();
 
     if (!panel) {
       // Type full text and try again
       if (setter) setter.call(input, optionText);
       input.dispatchEvent(new Event('input', {bubbles: true}));
       await sleep(600);
-      panel = findPanel();
+      panel = findMyPanel();
     }
 
     if (!panel) {
       // Try ArrowDown to open
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
       await sleep(400);
-      panel = findPanel();
+      panel = findMyPanel();
     }
 
     if (panel) {
