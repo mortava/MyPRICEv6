@@ -26,6 +26,7 @@ const FIELD_IDS = {
   prepayPlanType: '691667af4a1a0960d1e67596',
   shortTermRental: '688a8c972c7c7a45f870c4e5',
   firstTimeInvestor: '64062719bcd1bf2ef39bb120',
+  crossCollateralized: '697b9d8d942d1b374b520aa6',
 }
 
 // ================= Form Value Mappings =================
@@ -85,7 +86,7 @@ function mapFormValues(formData: any) {
     dscrRatio: isDSCR ? String(Number(formData.dscrValue) || 1.25) : '',
     occupancy: occupancyMap[formData.occupancyType] || 'Primary Residence',
     propertyType: propTypeMap[formData.propertyType] || 'Single Family Residence',
-    units: formData.propertyType?.startsWith('2') ? '2' : formData.propertyType?.startsWith('3') ? '3' : formData.propertyType?.startsWith('4') ? '4' : '1',
+    units: formData.propertyType === '5-9unit' ? '5' : formData.propertyType?.startsWith('2') ? '2' : formData.propertyType?.startsWith('3') ? '3' : formData.propertyType?.startsWith('4') ? '4' : '1',
     attachmentType: formData.structureType === 'attached' ? 'Attached' : 'Detached',
     zip: formData.propertyZip || '90210',
     state: stateMap[formData.propertyState] || 'California',
@@ -99,6 +100,7 @@ function mapFormValues(formData: any) {
     isInvestment: formData.occupancyType === 'investment',
     prepayTerm: prepayMap[formData.prepayPeriod] || 'None',
     prepayPlanType: prepayTypeMap[formData.prepayType] || '5% Fixed',
+    isCrossCollateralized: !!formData.isCrossCollateralized,
   }
 }
 
@@ -148,6 +150,9 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
   }
   if (values.selfEmployed) {
     checkboxSets.push(`setCheckbox('${FIELD_IDS.selfEmployed}', true);`)
+  }
+  if (values.isCrossCollateralized) {
+    checkboxSets.push(`setCheckbox('${FIELD_IDS.crossCollateralized}', true);`)
   }
 
   return `(async function() {
