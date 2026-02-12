@@ -337,9 +337,9 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     }
 
     if (!panel) {
-      // Try clicking the trigger icon instead
-      var trigger = container.querySelector('.p-dropdown-trigger, [class*=trigger]');
-      if (trigger) { trigger.click(); await sleep(400); }
+      // Try clicking the trigger icon from the container
+      var trigger2 = field.container.querySelector('.p-dropdown-trigger, [class*=trigger]');
+      if (trigger2) { trigger2.click(); await sleep(400); }
       panels = document.querySelectorAll('.p-dropdown-panel, .p-overlay-panel, [class*=dropdown-panel]');
       for (var pi2 = 0; pi2 < panels.length; pi2++) {
         if (panels[pi2].offsetHeight > 0) { panel = panels[pi2]; break; }
