@@ -30,7 +30,7 @@ function mapFormToLN(body: any): Record<string, string> {
   const isDSCR = body.documentationType === 'dscr'
   const isInvestment = body.occupancyType === 'investment'
   const loanTypeMap: Record<string, string> = {
-    nonqm: 'Non-QM', conventional: 'Conventional', fha: 'FHA', va: 'VA',
+    nonqm: 'First Lien', conventional: 'First Lien', fha: 'First Lien', va: 'First Lien',
   }
 
   return {
@@ -324,7 +324,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
 
     if (panel) {
       // Find matching item and navigate to it with keyboard
-      var items = panel.querySelectorAll('li, [class*=autocomplete-item], [class*=option]');
+      var items = panel.querySelectorAll('li, [class*=autocomplete-item], [class*=option], [role=option]');
       var targetIdx = -1;
       for (var oi = 0; oi < items.length; oi++) {
         var itemText = (items[oi].textContent || '').trim();
@@ -354,6 +354,10 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
         await sleep(100);
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
         await sleep(200);
+        // Close panel and blur to ensure clean state for next field
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        input.dispatchEvent(new Event('blur', {bubbles: true}));
+        await sleep(100);
         diag.fills.push(labelText + ': ' + optionText + ' (kbd)');
         return true;
       } else {
@@ -365,6 +369,9 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       diag.fills.push(labelText + ': NO_PANEL');
     }
 
+    // Close any open panels before moving to next field
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await sleep(100);
     // Last resort: set value directly and blur
     if (setter) setter.call(input, optionText);
     input.dispatchEvent(new Event('input', {bubbles: true}));
