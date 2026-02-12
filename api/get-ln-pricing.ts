@@ -57,17 +57,21 @@ function mapFormToLN(body: any): Record<string, string> {
 }
 
 // ================= Fill form + Get Price + Scrape =================
-function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: string, password: string): string {
+function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: string, password: string, isRetry: boolean = false): string {
   const mapJson = JSON.stringify(fieldMap)
   return `(async function() {
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   var diag = { steps: [], fills: [] };
   var fieldMap = ${mapJson};
+  var isRetry = ${isRetry};
 
   diag.steps.push('url: ' + window.location.href);
+  diag.steps.push('mode: ' + (isRetry ? 'retry' : 'initial'));
 
-  // Poll for either pricing form (>10 inputs) OR Angular login form
   var formReady = false;
+
+  if (!isRetry) {
+  // Initial: handle Angular login + Lock Desk redirect
   for (var w = 0; w < 6; w++) {
     await sleep(1000);
     var usernameField = document.getElementById('username');
@@ -103,55 +107,12 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       diag.steps.push('has_get_price: ' + hasQuickPricer);
 
       if (!hasQuickPricer) {
-        // After login we're on Lock Desk. Use Angular's client-side routing
-        // (History API + popstate) to navigate WITHOUT a page reload, keeping
-        // this script context alive so we can continue filling the form.
-        diag.steps.push('on_lock_desk_navigating_to_qp');
-
-        // Strategy 1: Click any visible Quick Pricer / nex-app link
-        var navClicked = false;
-        var allLinks = document.querySelectorAll('a[href], [routerLink]');
-        for (var nl = 0; nl < allLinks.length; nl++) {
-          var href = allLinks[nl].getAttribute('href') || allLinks[nl].getAttribute('routerLink') || '';
-          if (href.indexOf('nex-app') >= 0 || href.indexOf('quick-pricer') >= 0) {
-            allLinks[nl].click();
-            navClicked = true;
-            diag.steps.push('clicked_nav_link: ' + href);
-            break;
-          }
-        }
-
-        // Strategy 2: Try Angular router via History API
-        if (!navClicked) {
-          window.history.pushState({}, '', '/nex-app');
-          window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
-          diag.steps.push('history_pushstate_to_nex_app');
-        }
-
-        // Wait for the Quick Pricer form to appear (Angular client-side routing)
-        var qpLoaded = false;
-        for (var qw = 0; qw < 6; qw++) {
-          await sleep(1000);
-          var qpInputs = document.querySelectorAll('input:not([type=hidden])');
-          var qpText = (document.body.innerText || '');
-          if (qpText.indexOf('Get Price') >= 0 && qpInputs.length > 10) {
-            diag.steps.push('qp_loaded_at: ' + ((qw+1)) + 's, fields: ' + qpInputs.length);
-            qpLoaded = true;
-            break;
-          }
-        }
-
-        if (!qpLoaded) {
-          // Fallback: hard navigation (kills script, relies on retry steps)
-          diag.steps.push('qp_not_loaded_falling_back_to_hard_nav');
-          setTimeout(function() { window.location.href = '/nex-app'; }, 200);
-          return JSON.stringify({ success: true, needsNextStep: true, rates: [], diag: diag });
-        }
-
-        formReady = true;
-      } else {
-        formReady = true;
+        // On Lock Desk — full page navigation for proper Angular form init
+        diag.steps.push('on_lock_desk_hard_nav_to_qp');
+        setTimeout(function() { window.location.href = '/nex-app'; }, 200);
+        return JSON.stringify({ success: true, needsNextStep: true, rates: [], diag: diag });
       }
+      formReady = true;
       break;
     }
 
@@ -159,6 +120,21 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       diag.steps.push('form_at: ' + ((w+1)) + 's, fields: ' + allInputs.length);
       formReady = true;
       break;
+    }
+  }
+  } else {
+    // Retry: wait for properly initialized QP form after hard navigation
+    for (var rw = 0; rw < 8; rw++) {
+      await sleep(1000);
+      var retryInputs = document.querySelectorAll('input:not([type=hidden])');
+      if (retryInputs.length > 10) {
+        var retryText = (document.body.innerText || '');
+        if (retryText.indexOf('Get Price') >= 0) {
+          diag.steps.push('retry_form_at: ' + ((rw+1)) + 's, fields: ' + retryInputs.length);
+          formReady = true;
+          break;
+        }
+      }
     }
   }
 
@@ -169,6 +145,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     return JSON.stringify({ success: false, error: 'form_not_loaded', rates: [], diag: diag });
   }
 
+  if (!isRetry) {
   // DOM diagnostics — understand the dropdown component type
   var domInfo = {};
   domInfo.pDropdowns = document.querySelectorAll('p-dropdown, .p-dropdown').length;
@@ -205,6 +182,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
   }
 
   diag.domInfo = domInfo;
+  } // end !isRetry DOM diagnostics
 
   // Find field input by label text — walk DOM to find associated PrimeNG component
   function findFieldInput(labelText) {
@@ -575,7 +553,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const body = req.body || {}
     const fieldMap = mapFormToLN(body)
-    const fillScript = buildFillAndScrapeScript(fieldMap, loannexUser, loannexPassword)
+    const fillScript = buildFillAndScrapeScript(fieldMap, loannexUser, loannexPassword, false)
+    const retryScript = buildFillAndScrapeScript(fieldMap, loannexUser, loannexPassword, true)
 
     // Wrapper login script (fills web.loannex.com form)
     const loginScript = `(async function() {
@@ -618,14 +597,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return JSON.stringify({ ok: false, error: 'no_iframe', iframes: iframes.length });
 })()`
 
-    // 5-step BQL: wrapper login → wait → navigate to iframe → fill form + scrape
-    // Steps 3 and 4 will error from navigation — that's expected, BQL continues
+    // 7-step BQL: wrapper login → wait → nav to iframe → fill/scrape → wait → retry
+    // Steps 3-4 error from navigation (expected). Step 5 returns needsNextStep if on Lock Desk.
+    // Steps 6-7 handle retry after hard nav to /nex-app for proper Angular form init.
     const bqlQuery = `mutation FillAndPrice {
   loginPage: goto(url: "https://web.loannex.com/", waitUntil: networkIdle) { status time }
   login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 6000) { value }
   waitForNav: evaluate(content: "new Promise(r => setTimeout(r, 3000)).then(() => JSON.stringify({ok:true}))", timeout: 5000) { value }
   navToIframe: evaluate(content: ${JSON.stringify(navScript)}, timeout: 8000) { value }
-  price: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 50000) { value }
+  price: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 30000) { value }
+  waitForQP: evaluate(content: "new Promise(r => setTimeout(r, 5000)).then(() => JSON.stringify({ok:true}))", timeout: 8000) { value }
+  retryPrice: evaluate(content: ${JSON.stringify(retryScript)}, timeout: 30000) { value }
 }`
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
@@ -653,8 +635,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const priceData = safeParseValue(bqlResult.data?.price?.value)
+    const retryData = safeParseValue(bqlResult.data?.retryPrice?.value)
 
-    if (!priceData) {
+    // Use retry data if initial step hit Lock Desk (needsNextStep), or if initial step errored
+    const resultData = (priceData?.needsNextStep && retryData) ? retryData
+      : (!priceData && retryData) ? retryData
+      : priceData
+
+    if (!resultData) {
       return res.json({
         success: false,
         error: 'No data from pricing step',
@@ -662,12 +650,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           bqlErrors: (bqlResult.errors || []).map((e: any) => ({ msg: e.message?.substring(0, 100), path: e.path })).slice(0, 5),
           hasData: !!bqlResult.data,
           dataKeys: bqlResult.data ? Object.keys(bqlResult.data) : [],
+          priceNeedsRetry: priceData?.needsNextStep || false,
+          retryAvailable: !!retryData,
         }
       })
     }
 
     // Transform scraped table rows into rate options
-    const rates = priceData.rates || []
+    const rates = resultData.rates || []
     const rateOptions = rates.map((row: any) => {
       // Parse rate: "6.000%\n30 Days" or "6.000%"
       const rateField = row['Rate\nLock\nPeriod'] || row['Rate Lock Period'] || row['Rate'] || ''
@@ -706,7 +696,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         rateOptions,
         totalRates: rateOptions.length,
         rawRows: rates.length,
-        diag: priceData.diag,
+        diag: resultData.diag,
       },
     })
   } catch (error) {
