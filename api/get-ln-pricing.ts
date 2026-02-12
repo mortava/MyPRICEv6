@@ -471,10 +471,15 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       break;
     }
     // Check for any new content after Get Price (investor names, rate numbers)
-    if (body.match(/\d+\.\d{3}%/) || body.indexOf('Investor') >= 0) {
-      diag.steps.push('rate_text_detected_at: ' + ((attempt+1)*1.5) + 's');
-      resultsFound = true;
-      break;
+    // Only trust actual table elements — rate text like "31.997 %" can false-positive from form fields
+    var rateTextFound = body.match(/\d+\.\d{3}%/) || body.indexOf('Investor') >= 0;
+    if (rateTextFound && attempt < 6) {
+      diag.steps.push('rate_text_hint_at: ' + ((attempt+1)*1.5) + 's, waiting_for_table');
+      continue; // keep waiting for actual table
+    }
+    if (rateTextFound) {
+      diag.steps.push('rate_text_only_at: ' + ((attempt+1)*1.5) + 's');
+      break; // give up waiting for table
     }
   }
 
@@ -484,10 +489,17 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     var fullText = (document.body.innerText || '');
     var gpIdx = fullText.indexOf('Get Price');
     diag.afterGetPrice = gpIdx >= 0 ? fullText.substring(gpIdx, gpIdx + 800) : fullText.substring(0, 1500);
+    // Count table elements for diagnostics
+    var allTbls = document.querySelectorAll('table, p-table, .p-datatable');
+    var tblInfo = [];
+    for (var tbi = 0; tbi < allTbls.length; tbi++) {
+      tblInfo.push({ tag: allTbls[tbi].tagName, rows: allTbls[tbi].querySelectorAll('tr').length });
+    }
+    diag.tableElements = tblInfo;
     return JSON.stringify({ success: true, rates: [], diag: diag });
   }
 
-  await sleep(500); // settle
+  await sleep(1000); // settle — allow table to fully render
 
   // Scrape the results table
   var rates = [];

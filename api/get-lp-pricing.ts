@@ -101,6 +101,7 @@ function mapFormValues(formData: any) {
     prepayTerm: prepayMap[formData.prepayPeriod] || 'None',
     prepayPlanType: prepayTypeMap[formData.prepayType] || '5% Fixed',
     isCrossCollateralized: !!formData.isCrossCollateralized,
+    shortTermRental: 'No',
   }
 }
 
@@ -114,6 +115,8 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
     `setVal('${FIELD_IDS.occupancy}', '${values.occupancy}');`,
     `await sleep(300);`,
     `setVal('${FIELD_IDS.propertyType}', '${values.propertyType}');`,
+    `await sleep(500);`,
+    `setVal('${FIELD_IDS.shortTermRental}', '${values.shortTermRental}');`,
     `setVal('${FIELD_IDS.units}', '${values.units}');`,
     `setVal('${FIELD_IDS.attachmentType}', '${values.attachmentType}');`,
     `setVal('${FIELD_IDS.zip}', '${values.zip}');`,
