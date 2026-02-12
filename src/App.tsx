@@ -1646,10 +1646,6 @@ export default function App() {
                 const prepayMonths = parseInt(formData.prepayPeriod) || 0
                 const priceCeiling = prepayMonths <= 24 ? 100.000 : 101.000
                 const adjustedLpRates = lpResult.rateOptions
-                  .filter((opt: any) => {
-                    const prog = String(opt.program || '').toUpperCase()
-                    return !(prog.includes('CONF') && !prog.includes('NONCONF'))
-                  })
                   .map((opt: any) => ({
                     ...opt,
                     price: safeNumber(opt.price) - 0.625,
