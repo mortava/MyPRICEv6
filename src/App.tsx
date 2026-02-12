@@ -1591,10 +1591,10 @@ export default function App() {
                 ) : (
                   <Card className="border-amber-200 bg-amber-50">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base text-amber-700">No Programs Returned</CardTitle>
+                      <CardTitle className="text-base text-amber-700">Refer to National Market Pricing</CardTitle>
                     </CardHeader>
                     <CardContent className="text-sm text-amber-600">
-                      <p>The API returned pricing but no program details were parsed.</p>
+                      <p>Refer to National Market Pricing</p>
                       {result.debug && (
                         <div className="mt-3 p-2 bg-white rounded border text-xs font-mono text-gray-600 space-y-2">
                           <p>Raw programs found: {result.debug.rawProgramsFound}</p>
