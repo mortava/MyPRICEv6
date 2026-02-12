@@ -175,6 +175,8 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
     var el = document.getElementById(id);
     if (!el) { diag.fieldResults[id] = 'NOT_FOUND'; return; }
     diag.fieldResults[id] = { tag: el.tagName, found: true };
+    // Remove step constraint on number inputs to prevent :invalid state
+    if (el.type === 'number' && el.step) el.setAttribute('step', 'any');
     var s = el.tagName === 'SELECT'
       ? Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
       : Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
