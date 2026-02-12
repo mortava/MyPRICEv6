@@ -175,14 +175,18 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
     var el = document.getElementById(id);
     if (!el) { diag.fieldResults[id] = 'NOT_FOUND'; return; }
     diag.fieldResults[id] = { tag: el.tagName, found: true };
-    // Remove step constraint on number inputs to prevent :invalid state
-    if (el.type === 'number' && el.step) el.setAttribute('step', 'any');
     var s = el.tagName === 'SELECT'
       ? Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
       : Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
     s.call(el, val);
     el.dispatchEvent(new Event('input', {bubbles: true}));
     el.dispatchEvent(new Event('change', {bubbles: true}));
+    // Force remove validation constraints on number inputs AFTER events fire
+    if (el.type === 'number') {
+      el.removeAttribute('step'); el.removeAttribute('min'); el.removeAttribute('max');
+      el.setAttribute('step', 'any');
+      el.setCustomValidity('');
+    }
   }
   function setCheckbox(id, checked) {
     var el = document.getElementById(id);
