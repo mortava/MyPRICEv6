@@ -480,11 +480,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const fieldMap = mapFormToLN(body)
     const fillScript = buildFillAndScrapeScript(fieldMap, loannexUser, loannexPassword)
 
-    // Simple 2-step BQL: go directly to Angular app, then fill+scrape
-    // The fillScript handles Angular login if needed and Lock Desk navigation
+    // Wrapper login script (fills web.loannex.com form)
+    const loginScript = `(async function() {
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  await sleep(1000);
+  var u = document.getElementById('UserName');
+  var p = document.getElementById('Password');
+  var b = document.getElementById('btnSubmit');
+  if (!u || !p) return JSON.stringify({ ok: false, error: 'no_form' });
+  function si(el, val) {
+    el.focus();
+    var s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    s.call(el, val);
+    el.dispatchEvent(new Event('input', {bubbles: true}));
+    el.dispatchEvent(new Event('change', {bubbles: true}));
+  }
+  si(u, '${loannexUser}');
+  await sleep(150);
+  si(p, '${loannexPassword}');
+  await sleep(150);
+  if (b) setTimeout(function() { b.click(); }, 100);
+  return JSON.stringify({ ok: true });
+})()`
+
+    // Navigate to iframe URL (extracts tokenKey URL from wrapper page)
+    const navScript = `(async function() {
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  await sleep(1500);
+  var iframes = document.getElementsByTagName('iframe');
+  for (var i = 0; i < iframes.length; i++) {
+    if (iframes[i].src && iframes[i].src.indexOf('nex-app') >= 0) {
+      window.location.href = iframes[i].src;
+      return JSON.stringify({ ok: true, src: iframes[i].src });
+    }
+  }
+  if (iframes.length > 0 && iframes[0].src) {
+    window.location.href = iframes[0].src;
+    return JSON.stringify({ ok: true, src: iframes[0].src });
+  }
+  return JSON.stringify({ ok: false, error: 'no_iframe', iframes: iframes.length });
+})()`
+
+    // 5-step BQL: wrapper login → wait → navigate to iframe → fill form + scrape
+    // Steps 3 and 4 will error from navigation — that's expected, BQL continues
     const bqlQuery = `mutation FillAndPrice {
-  page: goto(url: "https://webapp.loannex.com/nex-app", waitUntil: networkIdle) { status time }
-  price: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 55000) { value }
+  loginPage: goto(url: "https://web.loannex.com/", waitUntil: networkIdle) { status time }
+  login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 6000) { value }
+  waitForNav: evaluate(content: "new Promise(r => setTimeout(r, 3000)).then(() => JSON.stringify({ok:true}))", timeout: 5000) { value }
+  navToIframe: evaluate(content: ${JSON.stringify(navScript)}, timeout: 8000) { value }
+  price: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 50000) { value }
 }`
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
