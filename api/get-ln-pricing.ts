@@ -33,8 +33,10 @@ function mapFormToLN(body: any): Record<string, string> {
     nonqm: 'First Lien', conventional: 'First Lien', fha: 'First Lien', va: 'First Lien',
   }
 
-  const dscrVal = isDSCR ? String(body.dscrRatio || '1.250').replace('>=', '') : ''
-  const rentalVal = isDSCR ? String(body.grossRentalIncome || '5000') : ''
+  // Prefer numeric dscrValue; fall back to extracting from dscrRatio range string
+  const dscrNum = body.dscrValue || (body.dscrRatio ? parseFloat(String(body.dscrRatio).replace(/[><=]/g, '').split('-')[0]) : 1.250)
+  const dscrVal = isDSCR ? String(dscrNum || '1.250') : ''
+  const rentalVal = isDSCR ? String(body.grossRent || body.grossRentalIncome || '5000') : ''
   const ppVal = isInvestment ? '5 Year' : 'None'
   const finProps = isInvestment ? '1' : ''
 
@@ -46,13 +48,13 @@ function mapFormToLN(body: any): Record<string, string> {
     'Income Doc': docMap[body.documentationType] || 'DSCR',
     'Citizenship': citizenMap[body.citizenship] || 'US Citizen',
     'State': body.propertyState || 'CA',
-    'County': body.county || 'Los Angeles',
+    'County': body.propertyCounty || body.county || 'Los Angeles',
     'Appraised Value': propertyValue,
     'Purchase Price': body.loanPurpose === 'purchase' ? propertyValue : '',
     'First Lien Amount': loanAmount,
     'FICO': creditScore,
     'DTI': String(body.dti || ''),
-    'Escrows': body.impoundType === '3' ? 'No' : 'Yes',
+    'Escrows': body.impoundType === 'noescrow' || body.impoundType === '3' ? 'No' : 'Yes',
     // DSCR/Investment fields — include label variants
     'DSCR': dscrVal, 'DSCR Ratio': dscrVal, 'DSCR %': dscrVal,
     'Mo. Rental Income': rentalVal, 'Monthly Rental Income': rentalVal, 'Gross Rental Income': rentalVal,
