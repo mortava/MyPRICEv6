@@ -85,7 +85,7 @@ function mapFormValues(formData: any) {
     fico: String(Number(formData.creditScore) || 740),
     citizenship: citizenMap[formData.citizenship] || 'US Citizen',
     docType: docTypeMap[formData.documentationType] || 'Full Doc',
-    dscrRatio: isDSCR ? String(Number(formData.dscrValue) || 1.25) : '',
+    dscrRatio: isDSCR ? String(Math.max(Number(formData.dscrValue) || 1.25, formData.propertyType === '5-9unit' ? 1.0 : 0)) : '',
     occupancy: occupancyMap[formData.occupancyType] || 'Primary Residence',
     propertyType: propTypeMap[formData.propertyType] || 'Single Family Residence',
     units: formData.propertyType === '5-9unit' ? '5' : formData.propertyType?.startsWith('2') ? '2' : formData.propertyType?.startsWith('3') ? '3' : formData.propertyType?.startsWith('4') ? '4' : '1',

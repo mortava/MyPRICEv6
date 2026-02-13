@@ -388,6 +388,15 @@ export default function App() {
         updated.occupancyType = 'investment'
         // Keep loanType as nonqm - don't change it
       }
+      // MultiFamily 5-8 Units: Auto-set DSCR + Investment (only allowed config)
+      if (field === 'propertyType' && value === '5-9unit') {
+        updated.documentationType = 'dscr'
+        updated.occupancyType = 'investment'
+        updated.is5PlusUnits = true
+      }
+      if (field === 'propertyType' && value !== '5-9unit') {
+        updated.is5PlusUnits = false
+      }
       // Auto-set hasITIN when citizenship is ITIN
       if (field === 'citizenship') {
         updated.hasITIN = value === 'itin'
@@ -440,6 +449,14 @@ export default function App() {
     // CRITICAL: DSCR loans are ONLY for Investment properties
     if (formData.documentationType === 'dscr' && formData.occupancyType !== 'investment') {
       errors.documentationType = 'DSCR loans are only available for Investment properties'
+    }
+    // MultiFamily 5-8 Units: DSCR min 1.000
+    if (formData.propertyType === '5-9unit' && formData.documentationType === 'dscr') {
+      const rent = Number(formData.grossRent.replace(/,/g, '')) || 0
+      const expense = Number(formData.presentHousingExpense.replace(/,/g, '')) || 0
+      if (expense > 0 && rent / expense < 1.0) {
+        errors.grossRent = 'MultiFamily 5-8 Units requires DSCR ratio of at least 1.000'
+      }
     }
 
     const creditScore = Number(formData.creditScore)
@@ -1012,7 +1029,7 @@ export default function App() {
                             <SelectItem value="2unit">2 Unit</SelectItem>
                             <SelectItem value="3unit">3 Unit</SelectItem>
                             <SelectItem value="4unit">4 Unit</SelectItem>
-                            <SelectItem value="5-9unit">5-9 Units</SelectItem>
+                            <SelectItem value="5-9unit">MultiFamily 5-8 Units</SelectItem>
                             <SelectItem value="blanket" disabled className="text-gray-400">Blanket Investor</SelectItem>
                           </SelectContent>
                         </Select>
@@ -1109,8 +1126,8 @@ export default function App() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="documentationType">Doc Type</Label>
-                        <Select name="documentationType" value={formData.documentationType} onValueChange={(v) => handleInputChange('documentationType', v)}>
+                        <Label htmlFor="documentationType">Doc Type {formData.propertyType === '5-9unit' && <span className="text-xs text-blue-600 font-normal">(DSCR only for MultiFamily)</span>}</Label>
+                        <Select name="documentationType" value={formData.documentationType} onValueChange={(v) => handleInputChange('documentationType', v)} disabled={formData.propertyType === '5-9unit'}>
                           <SelectTrigger id="documentationType"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="fullDoc">Full Document</SelectItem>
