@@ -1448,7 +1448,7 @@ export default function App() {
                                     <td className="py-2 px-3 text-gray-700">
                                       {rateDisplay.toFixed(3)}%
                                     </td>
-                                    <td className={`py-2 px-3 font-medium ${priceDisplay > 0 ? 'text-red-600' : priceDisplay < 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                                    <td className={`py-2 px-3 font-medium ${priceDisplay > 0 ? 'text-green-600' : priceDisplay < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                                       {priceDisplay.toFixed(3)}
                                     </td>
                                     <td className="py-2 px-3 text-gray-900">{adj.description}</td>
@@ -1583,7 +1583,7 @@ export default function App() {
                                             <td className="py-2 px-2 text-right font-medium">{payment > 0 ? formatCurrency(payment) : '-'}</td>
                                             <td className="py-2 pl-2 text-right">
                                               {adjustments.length > 0 ? (
-                                                <span className={`${totalAdjustment >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                <span className={`${totalAdjustment >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                   {totalAdjustment >= 0 ? '+' : ''}{totalAdjustment.toFixed(3)}
                                                 </span>
                                               ) : '-'}
@@ -1603,7 +1603,7 @@ export default function App() {
                                       {bestRate.adjustments.map((adj: Adjustment, adjIdx: number) => (
                                         <div key={adjIdx} className="flex justify-between text-xs bg-gray-50 px-2 py-1 rounded">
                                           <span className="text-gray-600 truncate mr-2">{adj.description}</span>
-                                          <span className={`font-medium ${adj.amount >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                          <span className={`font-medium ${adj.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                             {adj.amount >= 0 ? '+' : ''}{adj.amount.toFixed(3)}
                                           </span>
                                         </div>
@@ -1724,7 +1724,7 @@ export default function App() {
                                     </td>
                                     <td className="py-2.5 px-4 text-right font-mono">
                                       {opt.totalAdjustments !== 0 ? (
-                                        <span className={opt.totalAdjustments > 0 ? 'text-red-400' : 'text-emerald-400'}>
+                                        <span className={opt.totalAdjustments > 0 ? 'text-emerald-400' : 'text-red-400'}>
                                           {opt.totalAdjustments > 0 ? '+' : ''}{safeNumber(opt.totalAdjustments).toFixed(3)}
                                         </span>
                                       ) : <span className="text-slate-500">-</span>}

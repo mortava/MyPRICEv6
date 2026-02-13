@@ -34,14 +34,14 @@ function mapFormToLN(body: any): Record<string, string> {
   }
 
   // Prefer numeric dscrValue; fall back to extracting from dscrRatio range string
-  const dscrNum = body.dscrValue || (body.dscrRatio ? parseFloat(String(body.dscrRatio).replace(/[><=]/g, '').split('-')[0]) : 1.250)
-  const dscrVal = isDSCR ? String(dscrNum || '1.250') : ''
+  const dscrNum = body.dscrValue || (body.dscrRatio ? parseFloat(String(body.dscrRatio).replace(/[><=]/g, '').split('-')[0]) : 1.0)
+  const dscrVal = isDSCR ? String(dscrNum || '1.0') : ''
   const rentalVal = isDSCR ? String(body.grossRent || body.grossRentalIncome || '5000') : ''
   const ppVal = isInvestment ? '5 Year' : 'None'
   const finProps = isInvestment ? '1' : ''
 
   return {
-    'Loan Type': loanTypeMap[body.loanType] || 'Non-QM',
+    'Loan Type': loanTypeMap[body.loanType] || 'First Lien',
     'Purpose': purposeMap[body.loanPurpose] || 'Purchase',
     'Occupancy': occupancyMap[body.occupancyType] || 'Investment',
     'Property Type': propertyMap[body.propertyType] || 'SFR',
