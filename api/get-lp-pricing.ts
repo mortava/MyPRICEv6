@@ -163,7 +163,7 @@ function buildEvaluateScript(values: ReturnType<typeof mapFormValues>): string {
   if (values.selfEmployed) {
     checkboxSets.push(`setCheckbox('${FIELD_IDS.selfEmployed}', true);`)
   }
-  if (values.isCrossCollateralized) {
+  if (values.isCrossCollateralized && values.loanPurpose === 'Purchase') {
     checkboxSets.push(`setCheckbox('${FIELD_IDS.crossCollateralized}', true);`)
   }
 
