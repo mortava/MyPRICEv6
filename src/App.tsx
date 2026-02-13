@@ -129,6 +129,7 @@ interface PricingResult {
     xmlPreview: string
     pricingResultsPreview?: string
   }
+  mlSkipped?: boolean
 }
 
 type ValidationErrors = Partial<Record<keyof LoanData, string>>
@@ -1337,7 +1338,7 @@ export default function App() {
                   )}
 
                   <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-                    {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Getting Pricing...</> : <><Calculator className="w-4 h-4" />Get Pricing</>}
+                    {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Getting Pricing...</> : <>Get Pricing</>}
                   </Button>
                 </form>
               </CardContent>
@@ -1348,6 +1349,24 @@ export default function App() {
           <div>
             {result ? (
               <>
+                {/* Cross Collateral or ML Skipped: Show "Pass to National Rate Card" */}
+                {(formData.isCrossCollateralized || result.mlSkipped) && (!Array.isArray(result.programs) || result.programs.length === 0) ? (
+                  <Card className="border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden relative">
+                    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+                    <CardContent className="py-8 relative z-10">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-500/30">
+                          <Globe className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <p className="text-base font-semibold text-white tracking-tight">Pass to National Rate Card</p>
+                        <div className="flex items-center gap-1.5 text-[11px] text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-full font-medium">
+                          <ShieldCheck className="w-3 h-3" />Live Pricing
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                <>
                 <Card className="border-primary/20 bg-primary/5">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between flex-wrap gap-4">
@@ -1605,37 +1624,8 @@ export default function App() {
                       })}
                     </CardContent>
                   </Card>
-                ) : (
-                  <Card className="border-amber-200 bg-amber-50">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base text-amber-700">Refer to National Market Pricing</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-sm text-amber-600">
-                      <p>Refer to National Market Pricing</p>
-                      {result.debug && (
-                        <div className="mt-3 p-2 bg-white rounded border text-xs font-mono text-gray-600 space-y-2">
-                          <p>Raw programs found: {result.debug.rawProgramsFound}</p>
-                          <p>Raw rate options: {result.debug.rawRateOptionsFound}</p>
-                          <p>Formatted programs: {result.debug.formattedProgramsCount}</p>
-                          <p>Has PricingResults: {result.debug.hasPricingResultsField ? 'Yes' : 'No'}</p>
-                          <div className="mt-2">
-                            <p className="font-bold">XML Preview:</p>
-                            <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
-                              {result.debug.xmlPreview}
-                            </pre>
-                          </div>
-                          {result.debug.pricingResultsPreview && (
-                            <div className="mt-2">
-                              <p className="font-bold">PricingResults Content:</p>
-                              <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
-                                {result.debug.pricingResultsPreview}
-                              </pre>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                ) : null}
+                </>
                 )}
 
               {/* EXPANDED MARKET RATES - Lender Price (above Submit button) */}
@@ -1755,18 +1745,7 @@ export default function App() {
                 )
               })()}
 
-              {!lpLoading && lpResult && (!lpResult.rateOptions || lpResult.rateOptions.length === 0) && (
-                <Card className="mt-6 border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-                  <CardContent className="py-6">
-                    <div className="flex flex-col items-center gap-2">
-                      <Globe className="w-5 h-5 text-slate-500" />
-                      <p className="text-sm text-slate-400 text-center">
-                        No national wholesale rates available for this scenario
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* LP empty state removed — no message when LP returns no rates */}
 
               {/* ============ LOANNEX PIN GATE + RESULTS ============ */}
               {result && !lnUnlocked && (
@@ -1904,7 +1883,7 @@ export default function App() {
               {/* Submit Loan Button */}
               <div className="mt-6">
                 <a href="https://sub.defywholesale.com/" target="_blank" rel="noopener noreferrer" className="block">
-                  <Button type="button" size="lg" className="w-full bg-green-600 hover:bg-green-700 text-white">
+                  <Button type="button" size="lg" className="w-full bg-primary hover:bg-primary/90 text-white">
                     <ExternalLink className="w-4 h-4 mr-2" />Submit + Lock
                   </Button>
                 </a>
