@@ -454,8 +454,8 @@ export default function App() {
     if (formData.propertyType === '5-9unit' && formData.documentationType === 'dscr') {
       const rent = Number(formData.grossRent.replace(/,/g, '')) || 0
       const expense = Number(formData.presentHousingExpense.replace(/,/g, '')) || 0
-      if (expense > 0 && rent / expense < 1.0) {
-        errors.grossRent = 'MultiFamily 5-8 Units requires DSCR ratio of at least 1.000'
+      if (expense > 0 && rent / expense < 1.2) {
+        errors.grossRent = 'MultiFamily 5-8 Units requires DSCR ratio of at least 1.200'
       }
     }
 
