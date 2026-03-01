@@ -18,10 +18,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           className={cn(
-            'flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm transition-all duration-150',
+            'flex h-10 w-full border border-gray-300 bg-white px-3 py-2 text-sm transition-all duration-100',
             'placeholder:text-gray-400',
-            'focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary',
-            'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50',
+            'focus:outline-none focus:ring-1 focus:ring-black focus:border-black',
+            'disabled:cursor-not-allowed disabled:opacity-40 disabled:bg-gray-50',
             icon && 'pl-10',
             className
           )}

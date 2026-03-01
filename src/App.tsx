@@ -749,26 +749,28 @@ export default function App() {
   const targetPricing: TargetPricingOption | null = result ? getTargetPricing() : null
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 relative">
+    <div className="min-h-screen bg-white">
+      <header className="bg-white border-b border-black relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-gray-900 tracking-tight">OpenPrice</span>
-              <span className="bg-gray-900 text-white text-xs font-bold px-1.5 py-0.5 rounded">AI</span>
+            <div className="flex items-center gap-2.5">
+              <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+                <text x="24" y="36" fontSize="36" fontWeight="800" fill="#000" fontFamily='-apple-system, BlinkMacSystemFont, "Inter", sans-serif' textAnchor="middle" letterSpacing="-0.04em">P</text>
+              </svg>
+              <span className="font-editorial text-2xl font-bold text-black tracking-tight">OpenPrice</span>
             </div>
             {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-6">
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-600 hover:text-gray-900">AI Deal Desk</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pipeline</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-600 hover:text-gray-900">AVM</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-600 hover:text-gray-900">AUS</a>
+            <nav className="hidden md:flex items-center gap-8">
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gray-500 hover:text-black uppercase tracking-wider transition-colors">Deal Desk</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gray-500 hover:text-black uppercase tracking-wider transition-colors">Pipeline</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gray-500 hover:text-black uppercase tracking-wider transition-colors">AVM</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gray-500 hover:text-black uppercase tracking-wider transition-colors">AUS</a>
               <Button variant="outline" size="sm">Sign Out</Button>
             </nav>
             {/* Mobile hamburger */}
             <button
               type="button"
-              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              className="md:hidden p-2 text-black hover:bg-gray-100"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -778,13 +780,13 @@ export default function App() {
         </div>
         {/* Mobile dropdown menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white shadow-lg absolute left-0 right-0 z-50">
-            <div className="px-4 py-3 space-y-2">
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md" onClick={() => setMobileMenuOpen(false)}>AI Deal Desk</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md" onClick={() => setMobileMenuOpen(false)}>Pipeline</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md" onClick={() => setMobileMenuOpen(false)}>AVM</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md" onClick={() => setMobileMenuOpen(false)}>AUS</a>
-              <div className="border-t pt-2 mt-2">
+          <div className="md:hidden border-t border-black bg-white absolute left-0 right-0 z-50">
+            <div className="px-4 py-3 space-y-1">
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 uppercase tracking-wider" onClick={() => setMobileMenuOpen(false)}>Deal Desk</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 uppercase tracking-wider" onClick={() => setMobileMenuOpen(false)}>Pipeline</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 uppercase tracking-wider" onClick={() => setMobileMenuOpen(false)}>AVM</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 uppercase tracking-wider" onClick={() => setMobileMenuOpen(false)}>AUS</a>
+              <div className="border-t border-gray-200 pt-2 mt-2">
                 <Button variant="outline" size="sm" className="w-full" onClick={() => setMobileMenuOpen(false)}>Sign Out</Button>
               </div>
             </div>
@@ -797,8 +799,9 @@ export default function App() {
           <div>
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-primary" />Loan Details
+                <CardTitle className="flex items-center gap-3">
+                  <Calculator className="w-5 h-5 text-black" />
+                  <span className="font-editorial text-2xl font-bold tracking-tight">Loan Details</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -806,7 +809,7 @@ export default function App() {
 
                   {/* LOAN INFORMATION SECTION */}
                   <div className="border-b pb-4">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Loan Information</h3>
+                    <h3 className="text-[11px] font-semibold text-gray-400 mb-4 uppercase tracking-[0.2em]">Loan Information</h3>
                     {/* LINE 1: Lien Position, Lock Period, Loan Purpose, Term */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
@@ -831,21 +834,21 @@ export default function App() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="loanPurpose" className={hasError('loanPurpose') ? 'text-red-600' : ''}>Loan Purpose *</Label>
+                        <Label htmlFor="loanPurpose" className={hasError('loanPurpose') ? 'text-black font-bold' : ''}>Loan Purpose *</Label>
                         <Select name="loanPurpose" value={formData.loanPurpose} onValueChange={(v) => handleInputChange('loanPurpose', v)}>
-                          <SelectTrigger id="loanPurpose" className={hasError('loanPurpose') ? 'border-red-500' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="loanPurpose" className={hasError('loanPurpose') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="purchase">Purchase</SelectItem>
                             <SelectItem value="refinance">Refi Rate/Term</SelectItem>
                             <SelectItem value="cashout">Refinance Cashout</SelectItem>
                           </SelectContent>
                         </Select>
-                        {hasError('loanPurpose') && <p className="text-xs text-red-600">{validationErrors.loanPurpose}</p>}
+                        {hasError('loanPurpose') && <p className="text-xs text-black font-bold">{validationErrors.loanPurpose}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="loanTerm" className={hasError('loanTerm') ? 'text-red-600' : ''}>Term *</Label>
+                        <Label htmlFor="loanTerm" className={hasError('loanTerm') ? 'text-black font-bold' : ''}>Term *</Label>
                         <Select name="loanTerm" value={formData.loanTerm} onValueChange={(v) => handleInputChange('loanTerm', v)}>
-                          <SelectTrigger id="loanTerm" className={hasError('loanTerm') ? 'border-red-500' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="loanTerm" className={hasError('loanTerm') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="30">30 Year</SelectItem>
                             <SelectItem value="25">25 Year</SelectItem>
@@ -854,41 +857,41 @@ export default function App() {
                             <SelectItem value="10">10 Year</SelectItem>
                           </SelectContent>
                         </Select>
-                        {hasError('loanTerm') && <p className="text-xs text-red-600">{validationErrors.loanTerm}</p>}
+                        {hasError('loanTerm') && <p className="text-xs text-black font-bold">{validationErrors.loanTerm}</p>}
                       </div>
                     </div>
 
                     {/* LINE 2: Appraised Value/Sales Price, Loan Amount, LTV, CLTV (2nd/HELOC only), Amortization */}
                     <div className={`grid grid-cols-1 sm:grid-cols-2 ${formData.lienPosition !== '1st' ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4 mt-4`}>
                       <div className="space-y-2">
-                        <Label htmlFor="propertyValue" className={hasError('propertyValue') ? 'text-red-600' : ''}>Value/Sales Price *</Label>
+                        <Label htmlFor="propertyValue" className={hasError('propertyValue') ? 'text-black font-bold' : ''}>Value/Sales Price *</Label>
                         <Input
                           id="propertyValue"
                           name="propertyValue"
                           value={formData.propertyValue}
                           onChange={(e) => handleInputChange('propertyValue', formatNumberInput(e.target.value))}
                           icon={<DollarSign className="w-4 h-4" />}
-                          className={hasError('propertyValue') ? 'border-red-500' : ''}
+                          className={hasError('propertyValue') ? 'border-black' : ''}
                         />
-                        {hasError('propertyValue') && <p className="text-xs text-red-600">{validationErrors.propertyValue}</p>}
+                        {hasError('propertyValue') && <p className="text-xs text-black font-bold">{validationErrors.propertyValue}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="loanAmount" className={hasError('loanAmount') ? 'text-red-600' : ''}>Loan Amount *</Label>
+                        <Label htmlFor="loanAmount" className={hasError('loanAmount') ? 'text-black font-bold' : ''}>Loan Amount *</Label>
                         <Input
                           id="loanAmount"
                           name="loanAmount"
                           value={formData.loanAmount}
                           onChange={(e) => handleInputChange('loanAmount', formatNumberInput(e.target.value))}
                           icon={<DollarSign className="w-4 h-4" />}
-                          className={hasError('loanAmount') ? 'border-red-500' : ''}
+                          className={hasError('loanAmount') ? 'border-black' : ''}
                         />
-                        {hasError('loanAmount') && <p className="text-xs text-red-600">{validationErrors.loanAmount}</p>}
+                        {hasError('loanAmount') && <p className="text-xs text-black font-bold">{validationErrors.loanAmount}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="ltv" className="flex items-center gap-1">
                           LTV
                           <span className="relative group">
-                            <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
+                            <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
                             <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
                               Loan-to-Value Ratio
                               <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></span>
@@ -969,11 +972,11 @@ export default function App() {
 
                   {/* PROPERTY DETAILS SECTION - Merged Location and Property Details */}
                   <div className="border-b pb-4">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Property Details</h3>
+                    <h3 className="text-[11px] font-semibold text-gray-400 mb-4 uppercase tracking-[0.2em]">Property Details</h3>
                     {/* LINE 1: Location fields */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="propertyZip" className={hasError('propertyZip') ? 'text-red-600' : ''}>
+                        <Label htmlFor="propertyZip" className={hasError('propertyZip') ? 'text-black font-bold' : ''}>
                           ZIP Code * {zipLoading && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
                         </Label>
                         <Input
@@ -982,19 +985,19 @@ export default function App() {
                           maxLength={5}
                           value={formData.propertyZip}
                           onChange={(e) => handleInputChange('propertyZip', e.target.value.replace(/\D/g, ''))}
-                          className={hasError('propertyZip') ? 'border-red-500' : ''}
+                          className={hasError('propertyZip') ? 'border-black' : ''}
                           placeholder="Enter ZIP to auto-fill"
                           autoComplete="postal-code"
                         />
-                        {hasError('propertyZip') && <p className="text-xs text-red-600">{validationErrors.propertyZip}</p>}
+                        {hasError('propertyZip') && <p className="text-xs text-black font-bold">{validationErrors.propertyZip}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="propertyState" className={hasError('propertyState') ? 'text-red-600' : ''}>State *</Label>
+                        <Label htmlFor="propertyState" className={hasError('propertyState') ? 'text-black font-bold' : ''}>State *</Label>
                         <Select name="propertyState" value={formData.propertyState} onValueChange={(v) => handleInputChange('propertyState', v)}>
-                          <SelectTrigger id="propertyState" className={hasError('propertyState') ? 'border-red-500' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="propertyState" className={hasError('propertyState') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>{US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                         </Select>
-                        {hasError('propertyState') && <p className="text-xs text-red-600">{validationErrors.propertyState}</p>}
+                        {hasError('propertyState') && <p className="text-xs text-black font-bold">{validationErrors.propertyState}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="propertyCounty">County</Label>
@@ -1008,21 +1011,21 @@ export default function App() {
                     {/* LINE 2: Property type fields */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                       <div className="space-y-2">
-                        <Label htmlFor="occupancyType" className={hasError('occupancyType') ? 'text-red-600' : ''}>Property Use *</Label>
+                        <Label htmlFor="occupancyType" className={hasError('occupancyType') ? 'text-black font-bold' : ''}>Property Use *</Label>
                         <Select name="occupancyType" value={formData.occupancyType} onValueChange={(v) => handleInputChange('occupancyType', v)}>
-                          <SelectTrigger id="occupancyType" className={hasError('occupancyType') ? 'border-red-500' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="occupancyType" className={hasError('occupancyType') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="primary">Primary Residence</SelectItem>
                             <SelectItem value="secondary">Second Home</SelectItem>
                             <SelectItem value="investment">Investment</SelectItem>
                           </SelectContent>
                         </Select>
-                        {hasError('occupancyType') && <p className="text-xs text-red-600">{validationErrors.occupancyType}</p>}
+                        {hasError('occupancyType') && <p className="text-xs text-black font-bold">{validationErrors.occupancyType}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="propertyType" className={hasError('propertyType') ? 'text-red-600' : ''}>Property Type *</Label>
+                        <Label htmlFor="propertyType" className={hasError('propertyType') ? 'text-black font-bold' : ''}>Property Type *</Label>
                         <Select name="propertyType" value={formData.propertyType} onValueChange={(v) => handleInputChange('propertyType', v)}>
-                          <SelectTrigger id="propertyType" className={hasError('propertyType') ? 'border-red-500' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="propertyType" className={hasError('propertyType') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="sfr">Single Family</SelectItem>
                             <SelectItem value="condo">Condo</SelectItem>
@@ -1034,7 +1037,7 @@ export default function App() {
                             <SelectItem value="blanket" disabled className="text-gray-400">Blanket Investor</SelectItem>
                           </SelectContent>
                         </Select>
-                        {hasError('propertyType') && <p className="text-xs text-red-600">{validationErrors.propertyType}</p>}
+                        {hasError('propertyType') && <p className="text-xs text-black font-bold">{validationErrors.propertyType}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="structureType">Structure Type</Label>
@@ -1056,7 +1059,7 @@ export default function App() {
                           name="isRuralProperty"
                           checked={formData.isRuralProperty}
                           onChange={(e) => handleInputChange('isRuralProperty', e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
                         <span className="text-sm">Rural Property</span>
                       </label>
@@ -1067,7 +1070,7 @@ export default function App() {
                           name="isNonWarrantableProject"
                           checked={formData.isNonWarrantableProject}
                           onChange={(e) => handleInputChange('isNonWarrantableProject', e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
                         <span className="text-sm">Non-Warrantable Project?</span>
                       </label>
@@ -1078,7 +1081,7 @@ export default function App() {
                           name="isMixedUsePML"
                           checked={formData.isMixedUsePML}
                           onChange={(e) => handleInputChange('isMixedUsePML', e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
                         <span className="text-sm">Mixed Use</span>
                       </label>
@@ -1087,31 +1090,31 @@ export default function App() {
 
                   {/* BORROWER DETAILS SECTION */}
                   <div className="border-b pb-4">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Borrower Details</h3>
+                    <h3 className="text-[11px] font-semibold text-gray-400 mb-4 uppercase tracking-[0.2em]">Borrower Details</h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="creditScore" className={hasError('creditScore') ? 'text-red-600' : ''}>Estimated Credit Score *</Label>
+                        <Label htmlFor="creditScore" className={hasError('creditScore') ? 'text-black font-bold' : ''}>Estimated Credit Score *</Label>
                         <Input
                           id="creditScore"
                           name="creditScore"
                           maxLength={3}
                           value={formData.creditScore}
                           onChange={(e) => handleInputChange('creditScore', e.target.value.replace(/\D/g, ''))}
-                          className={hasError('creditScore') ? 'border-red-500' : ''}
+                          className={hasError('creditScore') ? 'border-black' : ''}
                         />
-                        {hasError('creditScore') && <p className="text-xs text-red-600">{validationErrors.creditScore}</p>}
+                        {hasError('creditScore') && <p className="text-xs text-black font-bold">{validationErrors.creditScore}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="dti" className={hasError('dti') ? 'text-red-600' : ''}>DTI (%) *</Label>
+                        <Label htmlFor="dti" className={hasError('dti') ? 'text-black font-bold' : ''}>DTI (%) *</Label>
                         <Input
                           id="dti"
                           name="dti"
                           maxLength={2}
                           value={formData.dti}
                           onChange={(e) => handleInputChange('dti', e.target.value.replace(/\D/g, ''))}
-                          className={hasError('dti') ? 'border-red-500' : ''}
+                          className={hasError('dti') ? 'border-black' : ''}
                         />
-                        {hasError('dti') && <p className="text-xs text-red-600">{validationErrors.dti}</p>}
+                        {hasError('dti') && <p className="text-xs text-black font-bold">{validationErrors.dti}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="citizenship">Citizenship</Label>
@@ -1127,7 +1130,7 @@ export default function App() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="documentationType">Doc Type {formData.propertyType === '5-9unit' && <span className="text-xs text-blue-600 font-normal">(DSCR only for MultiFamily)</span>}</Label>
+                        <Label htmlFor="documentationType">Doc Type {formData.propertyType === '5-9unit' && <span className="text-xs text-gray-500 font-normal">(DSCR only for MultiFamily)</span>}</Label>
                         <Select name="documentationType" value={formData.documentationType} onValueChange={(v) => handleInputChange('documentationType', v)} disabled={formData.propertyType === '5-9unit'}>
                           <SelectTrigger id="documentationType"><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -1152,7 +1155,7 @@ export default function App() {
                           name="isSelfEmployed"
                           checked={formData.isSelfEmployed}
                           onChange={(e) => handleInputChange('isSelfEmployed', e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
                         <span className="text-sm">Self Employed</span>
                       </label>
@@ -1163,7 +1166,7 @@ export default function App() {
                           name="isFTHB"
                           checked={formData.isFTHB}
                           onChange={(e) => handleInputChange('isFTHB', e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
                         <span className="text-sm">FTHB (First Time Home Buyer)</span>
                       </label>
@@ -1172,8 +1175,8 @@ export default function App() {
 
                   {/* INVESTOR DETAILS SECTION - Conditional */}
                   {showInvestorDetails && (
-                    <div className="border-b pb-4 bg-blue-50 -mx-6 px-6 py-4">
-                      <h3 className="text-sm font-semibold text-blue-700 mb-4 uppercase tracking-wide">Investor Details</h3>
+                    <div className="border-b pb-4 bg-gray-50 -mx-6 px-6 py-4 border-l-2 border-l-black">
+                      <h3 className="text-[11px] font-semibold text-gray-400 mb-4 uppercase tracking-[0.2em]">Investor Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="prepayPeriod">Prepay Period</Label>
@@ -1242,7 +1245,7 @@ export default function App() {
                           <Label className="flex items-center gap-1">
                             DSCR %
                             <span className="relative group">
-                              <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
+                              <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
                               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
                                 DSCR Calculated at {calculatedDSCR.display}
                                 <br />
@@ -1254,10 +1257,10 @@ export default function App() {
                             </span>
                           </Label>
                           <div className="h-10 px-3 py-2 bg-white border rounded-md text-sm font-medium flex items-center justify-between">
-                            <span className={`${
-                              calculatedDSCR.ratio >= 1.0 ? 'text-green-600' :
-                              calculatedDSCR.ratio >= 0.75 ? 'text-yellow-600' :
-                              'text-red-600'
+                            <span className={`font-mono font-bold ${
+                              calculatedDSCR.ratio >= 1.0 ? 'text-black' :
+                              calculatedDSCR.ratio >= 0.75 ? 'text-gray-500' :
+                              'text-gray-400'
                             }`}>
                               {calculatedDSCR.display}
                             </span>
@@ -1282,7 +1285,7 @@ export default function App() {
                               handleInputChange('isSeasonalProperty', e.target.checked)
                               handleInputChange('isShortTermRental', e.target.checked)
                             }}
-                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                           />
                           <span className="text-sm">Seasonal Property/Short Term Rental</span>
                         </label>
@@ -1293,7 +1296,7 @@ export default function App() {
                             name="isCrossCollateralized"
                             checked={formData.isCrossCollateralized}
                             onChange={(e) => handleInputChange('isCrossCollateralized', e.target.checked)}
-                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                           />
                           <span className="text-sm">Cross-Collateralized</span>
                         </label>
@@ -1307,7 +1310,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setShowOtherDetails(!showOtherDetails)}
-                      className="flex items-center gap-2 text-sm font-semibold text-gray-700 uppercase tracking-wide hover:text-gray-900"
+                      className="flex items-center gap-2 text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em] hover:text-black transition-colors"
                     >
                       {showOtherDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       Additional Details
@@ -1332,7 +1335,7 @@ export default function App() {
                   </div>
 
                   {error && (
-                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <div className="flex items-center gap-2 p-3 bg-white border-2 border-black text-black text-sm">
                       <AlertCircle className="w-4 h-4" />{error}
                     </div>
                   )}
@@ -1351,15 +1354,12 @@ export default function App() {
               <>
                 {/* Cross Collateral or ML Skipped: Show "Pass to National Rate Card" */}
                 {(formData.isCrossCollateralized || result.mlSkipped) && (!Array.isArray(result.programs) || result.programs.length === 0) ? (
-                  <Card className="border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden relative">
-                    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-                    <CardContent className="py-8 relative z-10">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-500/30">
-                          <Globe className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <p className="text-base font-semibold text-white tracking-tight">Pass to National Rate Card</p>
-                        <div className="flex items-center gap-1.5 text-[11px] text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-full font-medium">
+                  <Card className="border-2 border-black bg-black text-white overflow-hidden">
+                    <CardContent className="py-10">
+                      <div className="flex flex-col items-center gap-4">
+                        <Globe className="w-6 h-6 text-white" />
+                        <p className="font-editorial text-xl font-bold text-white tracking-tight">Pass to National Rate Card</p>
+                        <div className="flex items-center gap-1.5 text-[10px] text-white/70 border border-white/30 px-3 py-1 font-medium uppercase tracking-widest">
                           <ShieldCheck className="w-3 h-3" />Live Pricing
                         </div>
                       </div>
@@ -1367,19 +1367,20 @@ export default function App() {
                   </Card>
                 ) : (
                 <>
-                <Card className="border-primary/20 bg-primary/5">
+                <Card className="border-2 border-black">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between flex-wrap gap-4">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />Pricing Result
+                      <CardTitle className="text-lg flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-black" />
+                        <span className="font-editorial text-2xl font-bold">Pricing Result</span>
                       </CardTitle>
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-md">
-                          <CheckCircle2 className="w-3 h-3" />Live Pricing
+                        <div className="flex items-center gap-1.5 text-[10px] text-black border border-black px-2.5 py-1 font-medium uppercase tracking-widest">
+                          <CheckCircle2 className="w-3 h-3" />Live
                         </div>
                         {result.apiError && (
-                          <div className="flex items-center gap-1.5 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-md">
-                            <AlertCircle className="w-3 h-3" />API Error
+                          <div className="flex items-center gap-1.5 text-[10px] text-black border-2 border-black px-2.5 py-1 font-bold uppercase tracking-widest">
+                            <AlertCircle className="w-3 h-3" />Error
                           </div>
                         )}
                       </div>
@@ -1387,56 +1388,56 @@ export default function App() {
                   </CardHeader>
                   <CardContent>
                     {/* Main Pricing Metrics */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 text-center">
-                        <div className="text-3xl font-bold text-primary">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-0 border border-black">
+                      <div className="p-4 text-center border-r border-b border-black last:border-r-0">
+                        <div className="font-editorial text-3xl font-bold text-black">
                           {targetPricing ? formatPercent(targetPricing.rate) : formatPercent(safeNumber(result.rate))}
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">Rate</div>
+                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">Rate</div>
                       </div>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 text-center">
-                        <div className="text-2xl font-semibold text-gray-900">
+                      <div className="p-4 text-center border-r border-b border-black">
+                        <div className="font-editorial text-2xl font-bold text-black">
                           {targetPricing ? targetPricing.price.toFixed(3) : '100.000'}
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">Price</div>
+                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">Price</div>
                       </div>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 text-center">
-                        <div className="text-2xl font-semibold text-gray-900">
+                      <div className="p-4 text-center border-r border-b border-black">
+                        <div className="font-editorial text-2xl font-bold text-black">
                           {targetPricing ? formatPercent(targetPricing.apr) : formatPercent(safeNumber(result.apr))}
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">APR</div>
+                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">APR</div>
                       </div>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 text-center">
-                        <div className="text-2xl font-semibold text-gray-900">
+                      <div className="p-4 text-center border-r border-b border-black">
+                        <div className="font-editorial text-2xl font-bold text-black">
                           {targetPricing && targetPricing.payment > 0 ? formatCurrency(targetPricing.payment) : formatCurrency(safeNumber(result.monthlyPayment))}
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">Payment</div>
+                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">Payment</div>
                       </div>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 text-center">
-                        <div className="text-2xl font-semibold text-gray-900">
+                      <div className="p-4 text-center border-r border-b border-black">
+                        <div className="font-editorial text-2xl font-bold text-black">
                           {targetPricing ? targetPricing.points.toFixed(3) : safeNumber(result.points).toFixed(3)}
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">Points</div>
+                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">Points</div>
                       </div>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 text-center">
-                        <div className="text-2xl font-semibold text-gray-900">{safeNumber(result.ltvRatio).toFixed(1)}%</div>
-                        <div className="text-sm text-gray-500 mt-1">LTV</div>
+                      <div className="p-4 text-center border-b border-black">
+                        <div className="font-editorial text-2xl font-bold text-black">{safeNumber(result.ltvRatio).toFixed(1)}%</div>
+                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">LTV</div>
                       </div>
                     </div>
 
                     {/* Pricing Adjustments Table */}
                     {targetPricing && targetPricing.adjustments && targetPricing.adjustments.length > 0 && (
                       <div className="mt-6">
-                        <div className="text-sm font-semibold text-gray-700 mb-2">
-                          The following adjustments were made to create the above pricing.
+                        <div className="text-[11px] font-semibold text-gray-400 mb-3 uppercase tracking-[0.2em]">
+                          Pricing Adjustments Applied
                         </div>
-                        <div className="bg-white border rounded-lg overflow-hidden">
+                        <div className="border border-black overflow-hidden">
                           <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="text-left py-2 px-3 font-medium text-gray-600 w-24">Rate</th>
-                                <th className="text-left py-2 px-3 font-medium text-gray-600 w-24">Price</th>
-                                <th className="text-left py-2 px-3 font-medium text-gray-600">Description</th>
+                            <thead>
+                              <tr className="bg-black text-white">
+                                <th className="text-left py-2.5 px-3 text-[10px] font-medium uppercase tracking-widest w-24">Rate</th>
+                                <th className="text-left py-2.5 px-3 text-[10px] font-medium uppercase tracking-widest w-24">Price</th>
+                                <th className="text-left py-2.5 px-3 text-[10px] font-medium uppercase tracking-widest">Description</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1444,14 +1445,14 @@ export default function App() {
                                 const rateDisplay = adj.rateAdj !== undefined ? adj.rateAdj : (adj.percentage !== undefined ? adj.percentage : 0)
                                 const priceDisplay = adj.amount || 0
                                 return (
-                                  <tr key={idx} className="border-t">
-                                    <td className="py-2 px-3 text-gray-700">
+                                  <tr key={idx} className="border-t border-gray-200">
+                                    <td className="py-2 px-3 text-gray-600 font-mono text-xs">
                                       {rateDisplay.toFixed(3)}%
                                     </td>
-                                    <td className={`py-2 px-3 font-medium ${priceDisplay > 0 ? 'text-green-600' : priceDisplay < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                                      {priceDisplay.toFixed(3)}
+                                    <td className={`py-2 px-3 font-mono text-xs font-bold ${priceDisplay > 0 ? 'text-black' : priceDisplay < 0 ? 'text-gray-400' : 'text-gray-500'}`}>
+                                      {priceDisplay > 0 ? '+' : ''}{priceDisplay.toFixed(3)}
                                     </td>
-                                    <td className="py-2 px-3 text-gray-900">{adj.description}</td>
+                                    <td className="py-2 px-3 text-gray-900 text-xs">{adj.description}</td>
                                   </tr>
                                 )
                               })}
@@ -1465,9 +1466,9 @@ export default function App() {
 
                 {/* PROGRAMS - HORIZONTAL CARDS */}
                 {Array.isArray(result.programs) && result.programs.length > 0 ? (
-                  <Card className="mt-4">
+                  <Card className="mt-6 border border-gray-200">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Available Programs ({result.programs.filter(p => p && Array.isArray(p.rateOptions) && filterRateOptionsByPrice(p.rateOptions).length > 0).length})</CardTitle>
+                      <CardTitle className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em]">Available Programs ({result.programs.filter(p => p && Array.isArray(p.rateOptions) && filterRateOptionsByPrice(p.rateOptions).length > 0).length})</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {result.programs.map((program, idx) => {
@@ -1490,12 +1491,12 @@ export default function App() {
                         const bestPayment = bestRate ? safeNumber(bestRate.payment) : 0
 
                         return (
-                          <div key={idx} className="border rounded-lg overflow-hidden bg-white">
+                          <div key={idx} className="border border-gray-200 overflow-hidden bg-white">
                             {/* Horizontal Card Header */}
                             <button
                               type="button"
                               onClick={() => setExpandedProgram(expandedProgram === programName ? null : programName)}
-                              className="w-full px-4 py-3 hover:bg-gray-50"
+                              className="w-full px-4 py-3 hover:bg-gray-50 transition-colors"
                             >
                               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                 {/* Program Name */}
@@ -1507,20 +1508,20 @@ export default function App() {
                                 {/* Key Metrics - Horizontal on desktop, grid on mobile */}
                                 <div className="grid grid-cols-4 sm:flex sm:items-center gap-3 sm:gap-6 text-sm w-full sm:w-auto mt-2 sm:mt-0">
                                   <div className="text-center">
-                                    <div className="text-primary font-bold text-base sm:text-lg">{bestRate ? safeNumber(bestRate.rate).toFixed(3) : '-'}%</div>
-                                    <div className="text-xs text-gray-500">Rate</div>
+                                    <div className="text-black font-bold text-base sm:text-lg font-mono">{bestRate ? safeNumber(bestRate.rate).toFixed(3) : '-'}%</div>
+                                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">Rate</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="font-semibold text-gray-900 text-sm sm:text-base">{bestRate ? (100 - safeNumber(bestRate.points)).toFixed(3) : '-'}</div>
-                                    <div className="text-xs text-gray-500">Price</div>
+                                    <div className="font-semibold text-black text-sm sm:text-base font-mono">{bestRate ? (100 - safeNumber(bestRate.points)).toFixed(3) : '-'}</div>
+                                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">Price</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="font-semibold text-gray-900 text-sm sm:text-base">{bestRate ? safeNumber(bestRate.apr).toFixed(3) : '-'}%</div>
-                                    <div className="text-xs text-gray-500">APR</div>
+                                    <div className="font-semibold text-black text-sm sm:text-base font-mono">{bestRate ? safeNumber(bestRate.apr).toFixed(3) : '-'}%</div>
+                                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">APR</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="font-semibold text-gray-900 text-sm sm:text-base">{bestPayment > 0 ? formatCurrency(bestPayment) : '-'}</div>
-                                    <div className="text-xs text-gray-500">Payment</div>
+                                    <div className="font-semibold text-black text-sm sm:text-base font-mono">{bestPayment > 0 ? formatCurrency(bestPayment) : '-'}</div>
+                                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">Payment</div>
                                   </div>
                                 </div>
 
@@ -1536,19 +1537,19 @@ export default function App() {
 
                             {/* Expanded Rate Options */}
                             {expandedProgram === programName && filteredRateOptions.length > 0 && (
-                              <div className="bg-gray-50 border-t">
+                              <div className="bg-white border-t border-black">
                                 {/* Rate Options Table */}
                                 <div className="px-4 py-2 overflow-x-auto">
                                   <table className="w-full text-xs">
                                     <thead>
-                                      <tr className="text-gray-500 border-b">
-                                        <th className="text-left py-2 pr-2">Program/PPP</th>
-                                        <th className="text-right py-2 px-2">Rate</th>
-                                        <th className="text-right py-2 px-2">Price</th>
-                                        <th className="text-right py-2 px-2">Points</th>
-                                        <th className="text-right py-2 px-2">APR</th>
-                                        <th className="text-right py-2 px-2">Payment</th>
-                                        <th className="text-right py-2 pl-2">Adjustments</th>
+                                      <tr className="border-b border-black">
+                                        <th className="text-left py-2 pr-2 text-[10px] uppercase tracking-wider text-gray-400 font-medium">Program/PPP</th>
+                                        <th className="text-right py-2 px-2 text-[10px] uppercase tracking-wider text-gray-400 font-medium">Rate</th>
+                                        <th className="text-right py-2 px-2 text-[10px] uppercase tracking-wider text-gray-400 font-medium">Price</th>
+                                        <th className="text-right py-2 px-2 text-[10px] uppercase tracking-wider text-gray-400 font-medium">Points</th>
+                                        <th className="text-right py-2 px-2 text-[10px] uppercase tracking-wider text-gray-400 font-medium">APR</th>
+                                        <th className="text-right py-2 px-2 text-[10px] uppercase tracking-wider text-gray-400 font-medium">Payment</th>
+                                        <th className="text-right py-2 pl-2 text-[10px] uppercase tracking-wider text-gray-400 font-medium">Adj.</th>
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -1566,24 +1567,24 @@ export default function App() {
                                         const totalAdjustment = adjustments.reduce((sum, adj) => sum + (adj.amount || 0), 0)
 
                                         return (
-                                          <tr key={optIdx} className={`border-t border-gray-200 ${isClosestTo100 ? 'bg-blue-50' : points < 0 ? 'bg-green-50' : ''}`}>
+                                          <tr key={optIdx} className={`border-t border-gray-200 ${isClosestTo100 ? 'bg-gray-100 font-semibold' : ''}`}>
                                             <td className="py-2 pr-2 text-left">
-                                              <div className="max-w-[250px] truncate font-medium" title={opt.description || ''}>
+                                              <div className="max-w-[250px] truncate" title={opt.description || ''}>
                                                 {opt.description || programName}
                                               </div>
                                             </td>
-                                            <td className="py-2 px-2 text-right font-semibold text-primary">{safeNumber(opt.rate).toFixed(3)}%</td>
-                                            <td className={`py-2 px-2 text-right ${price >= 100 ? 'text-green-600 font-medium' : ''}`}>
+                                            <td className="py-2 px-2 text-right font-bold text-black font-mono">{safeNumber(opt.rate).toFixed(3)}%</td>
+                                            <td className={`py-2 px-2 text-right font-mono ${price >= 100 ? 'font-bold text-black' : 'text-gray-600'}`}>
                                               {price.toFixed(3)}
                                             </td>
-                                            <td className={`py-2 px-2 text-right ${points < 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                                            <td className={`py-2 px-2 text-right font-mono ${points < 0 ? 'font-bold text-black' : 'text-gray-500'}`}>
                                               {pointsDisplay}
                                             </td>
-                                            <td className="py-2 px-2 text-right">{safeNumber(opt.apr).toFixed(3)}%</td>
-                                            <td className="py-2 px-2 text-right font-medium">{payment > 0 ? formatCurrency(payment) : '-'}</td>
-                                            <td className="py-2 pl-2 text-right">
+                                            <td className="py-2 px-2 text-right font-mono text-gray-700">{safeNumber(opt.apr).toFixed(3)}%</td>
+                                            <td className="py-2 px-2 text-right font-mono font-medium">{payment > 0 ? formatCurrency(payment) : '-'}</td>
+                                            <td className="py-2 pl-2 text-right font-mono">
                                               {adjustments.length > 0 ? (
-                                                <span className={`${totalAdjustment >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                <span className={`${totalAdjustment >= 0 ? 'font-bold text-black' : 'text-gray-400'}`}>
                                                   {totalAdjustment >= 0 ? '+' : ''}{totalAdjustment.toFixed(3)}
                                                 </span>
                                               ) : '-'}
@@ -1597,13 +1598,13 @@ export default function App() {
 
                                 {/* Adjustments Detail (for best rate option) */}
                                 {bestRate && bestRate.adjustments && bestRate.adjustments.length > 0 && (
-                                  <div className="px-4 py-3 border-t bg-white">
-                                    <div className="text-xs font-semibold text-gray-700 mb-2">Pricing Adjustments (Best Rate)</div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                  <div className="px-4 py-3 border-t border-gray-200 bg-white">
+                                    <div className="text-[10px] font-semibold text-gray-400 mb-2 uppercase tracking-widest">Adjustments (Best Rate)</div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
                                       {bestRate.adjustments.map((adj: Adjustment, adjIdx: number) => (
-                                        <div key={adjIdx} className="flex justify-between text-xs bg-gray-50 px-2 py-1 rounded">
-                                          <span className="text-gray-600 truncate mr-2">{adj.description}</span>
-                                          <span className={`font-medium ${adj.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        <div key={adjIdx} className="flex justify-between text-xs border border-gray-200 px-2 py-1">
+                                          <span className="text-gray-500 truncate mr-2">{adj.description}</span>
+                                          <span className={`font-mono font-medium ${adj.amount >= 0 ? 'text-black' : 'text-gray-400'}`}>
                                             {adj.amount >= 0 ? '+' : ''}{adj.amount.toFixed(3)}
                                           </span>
                                         </div>
@@ -1630,18 +1631,13 @@ export default function App() {
 
               {/* EXPANDED MARKET RATES - Lender Price (above Submit button) */}
               {lpLoading && !lpResult && (
-                <Card className="mt-6 border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
-                  <CardContent className="py-8">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <div className="relative">
-                        <Globe className="w-8 h-8 text-cyan-400 animate-pulse" />
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping" />
-                      </div>
-                      <span className="text-sm text-slate-300 font-medium tracking-wide">Scanning national wholesale pricing engines...</span>
-                      <div className="flex gap-1 mt-1">
-                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <Card className="mt-6 border-2 border-black bg-black text-white overflow-hidden">
+                  <CardContent className="py-10">
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <Globe className="w-6 h-6 text-white animate-pulse" />
+                      <span className="text-xs text-white/60 font-medium uppercase tracking-[0.2em]">Scanning wholesale pricing engines</span>
+                      <div className="w-12 h-px bg-white/30 overflow-hidden">
+                        <div className="w-full h-full bg-white animate-pulse" />
                       </div>
                     </div>
                   </CardContent>
@@ -1667,67 +1663,60 @@ export default function App() {
                   ? ` - ${prepayMonths} Month Prepay`
                   : ''
                 return (
-                  <Card className="mt-6 border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden relative">
-                    {/* Subtle grid pattern overlay */}
-                    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-                    <CardHeader className="pb-3 relative z-10">
+                  <Card className="mt-6 border-2 border-black bg-black text-white overflow-hidden">
+                    <CardHeader className="pb-3">
                       <div className="flex items-center justify-between flex-wrap gap-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/30">
-                            <Zap className="w-4 h-4 text-cyan-400" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-base font-semibold text-white tracking-tight">
-                              AI Reviewed - National Wholesale Rate Results{prepayLabel}
-                            </CardTitle>
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <Zap className="w-4 h-4 text-white" />
+                          <CardTitle className="font-editorial text-lg font-bold text-white tracking-tight">
+                            National Wholesale Rates{prepayLabel}
+                          </CardTitle>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1.5 text-[11px] text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-full font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5 text-[10px] text-white/70 border border-white/30 px-2.5 py-1 font-medium uppercase tracking-widest">
                             <ShieldCheck className="w-3 h-3" />Verified
                           </div>
-                          <span className="text-[11px] font-mono text-slate-400">
+                          <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">
                             {filteredLpRates.length} rates
                           </span>
                         </div>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5">
-                        <Globe className="w-3 h-3 text-cyan-500/60" />
-                        We just checked all of the Industry Leading Pricing Engines for you.
+                      <p className="text-[10px] text-white/30 mt-2 uppercase tracking-widest">
+                        Industry-wide pricing engine scan complete
                       </p>
                     </CardHeader>
-                    <CardContent className="relative z-10">
+                    <CardContent>
                       {filteredLpRates.length > 0 ? (
-                        <div className="overflow-x-auto rounded-lg border border-slate-700/80 bg-slate-800/50">
+                        <div className="overflow-x-auto border border-white/20">
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="border-b border-slate-700">
-                                <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Rate</th>
-                                <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Price</th>
-                                <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Payment</th>
-                                <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Price Adj.</th>
+                              <tr className="border-b border-white/20">
+                                <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest text-white/40">Rate</th>
+                                <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest text-white/40">Price</th>
+                                <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest text-white/40">Payment</th>
+                                <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest text-white/40">Adj.</th>
                               </tr>
                             </thead>
                             <tbody>
                               {filteredLpRates.map((opt: any, idx: number) => {
                                 const isClosest = Math.abs(opt.price - 100) === closestPrice
                                 return (
-                                  <tr key={idx} className={`border-t border-slate-700/60 transition-colors ${isClosest ? 'bg-cyan-500/10' : 'hover:bg-slate-700/30'}`}>
-                                    <td className="py-2.5 px-4 text-right font-semibold text-cyan-300 font-mono">
+                                  <tr key={idx} className={`border-t border-white/10 transition-colors ${isClosest ? 'bg-white/10' : 'hover:bg-white/5'}`}>
+                                    <td className="py-2.5 px-4 text-right font-bold text-white font-mono">
                                       {safeNumber(opt.rate).toFixed(3)}%
                                     </td>
-                                    <td className={`py-2.5 px-4 text-right font-mono ${opt.price >= 100 ? 'text-emerald-400 font-semibold' : 'text-slate-300'}`}>
+                                    <td className={`py-2.5 px-4 text-right font-mono ${opt.price >= 100 ? 'text-white font-bold' : 'text-white/60'}`}>
                                       {safeNumber(opt.price).toFixed(3)}
                                     </td>
-                                    <td className="py-2.5 px-4 text-right text-slate-300 font-mono">
+                                    <td className="py-2.5 px-4 text-right text-white/60 font-mono">
                                       {opt.payment > 0 ? formatCurrency(safeNumber(opt.payment)) : '-'}
                                     </td>
                                     <td className="py-2.5 px-4 text-right font-mono">
                                       {opt.totalAdjustments !== 0 ? (
-                                        <span className={opt.totalAdjustments > 0 ? 'text-emerald-400' : 'text-red-400'}>
+                                        <span className={opt.totalAdjustments > 0 ? 'text-white font-bold' : 'text-white/40'}>
                                           {opt.totalAdjustments > 0 ? '+' : ''}{safeNumber(opt.totalAdjustments).toFixed(3)}
                                         </span>
-                                      ) : <span className="text-slate-500">-</span>}
+                                      ) : <span className="text-white/20">-</span>}
                                     </td>
                                   </tr>
                                 )
@@ -1736,7 +1725,7 @@ export default function App() {
                           </table>
                         </div>
                       ) : (
-                        <p className="text-sm text-slate-400 text-center py-3">
+                        <p className="text-xs text-white/40 text-center py-3">
                           {adjustedLpRates.length} rates returned, none in price range
                         </p>
                       )}
@@ -1749,15 +1738,13 @@ export default function App() {
 
               {/* ============ LOANNEX PIN GATE + RESULTS ============ */}
               {result && !lnUnlocked && (
-                <Card className="mt-6 border border-amber-600/40 bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-900 text-white overflow-hidden">
-                  <CardContent className="py-6">
+                <Card className="mt-6 border border-gray-300 bg-gray-50">
+                  <CardContent className="py-8">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500/15 border border-amber-500/30">
-                        <Lock className="w-5 h-5 text-amber-400" />
-                      </div>
-                      <p className="text-sm font-medium text-amber-200">Additional Pricing Source Available</p>
-                      <p className="text-xs text-slate-400">Enter access code to view additional rates</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <Lock className="w-5 h-5 text-gray-400" />
+                      <p className="font-editorial text-base font-bold text-black">Additional Pricing Source</p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-widest">Enter access code to unlock</p>
+                      <div className="flex items-center gap-2 mt-2">
                         <Input
                           type="password"
                           maxLength={4}
@@ -1765,36 +1752,30 @@ export default function App() {
                           onChange={(e) => { setLnPin(e.target.value); setLnPinError(false) }}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleLnPinSubmit() }}
                           placeholder="****"
-                          className={`w-24 text-center bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 tracking-[0.3em] ${lnPinError ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+                          className={`w-24 text-center border-gray-300 text-black placeholder:text-gray-300 tracking-[0.3em] ${lnPinError ? 'border-black ring-1 ring-black' : ''}`}
                         />
                         <Button
                           type="button"
                           size="sm"
                           onClick={handleLnPinSubmit}
-                          className="bg-amber-600 hover:bg-amber-700 text-white"
                         >
                           <Unlock className="w-3.5 h-3.5 mr-1" />Unlock
                         </Button>
                       </div>
-                      {lnPinError && <p className="text-xs text-red-400">Invalid access code</p>}
+                      {lnPinError && <p className="text-xs text-black font-medium">Invalid access code</p>}
                     </div>
                   </CardContent>
                 </Card>
               )}
 
               {lnUnlocked && lnLoading && (
-                <Card className="mt-6 border border-purple-600/30 bg-gradient-to-br from-purple-950/30 via-slate-900 to-slate-900 text-white overflow-hidden">
-                  <CardContent className="py-8">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <div className="relative">
-                        <Globe className="w-8 h-8 text-purple-400 animate-pulse" />
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-400 rounded-full animate-ping" />
-                      </div>
-                      <span className="text-sm text-slate-300 font-medium tracking-wide">Searching OpenBroker AI PPE...</span>
-                      <div className="flex gap-1 mt-1">
-                        <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <Card className="mt-6 border border-gray-300 bg-white">
+                  <CardContent className="py-10">
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <Globe className="w-6 h-6 text-black animate-pulse" />
+                      <span className="text-[10px] text-gray-400 font-medium uppercase tracking-[0.2em]">Searching OpenBroker AI PPE</span>
+                      <div className="w-12 h-px bg-gray-200 overflow-hidden">
+                        <div className="w-full h-full bg-black animate-pulse" />
                       </div>
                     </div>
                   </CardContent>
@@ -1802,56 +1783,51 @@ export default function App() {
               )}
 
               {lnUnlocked && !lnLoading && lnResult && lnResult.rateOptions && lnResult.rateOptions.length > 0 && (
-                <Card className="mt-6 border border-purple-600/30 bg-gradient-to-br from-purple-950/20 via-slate-900 to-slate-900 text-white overflow-hidden relative">
-                  <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-                  <CardHeader className="pb-3 relative z-10">
+                <Card className="mt-6 border-2 border-black bg-white">
+                  <CardHeader className="pb-3">
                     <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30">
-                          <Zap className="w-4 h-4 text-purple-400" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-base font-semibold text-white tracking-tight">
-                            OpenBroker AI PPE - Wholesale Rate Results
-                          </CardTitle>
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <Zap className="w-4 h-4 text-black" />
+                        <CardTitle className="font-editorial text-lg font-bold text-black tracking-tight">
+                          OpenBroker AI PPE
+                        </CardTitle>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 text-[11px] text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full font-medium">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-[10px] text-black border border-black px-2.5 py-1 font-medium uppercase tracking-widest">
                           <ShieldCheck className="w-3 h-3" />Verified
                         </div>
-                        <span className="text-[11px] font-mono text-slate-400">
+                        <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">
                           {lnResult.rateOptions.length} rates
                         </span>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="relative z-10">
-                    <div className="overflow-x-auto rounded-lg border border-slate-700/80 bg-slate-800/50">
+                  <CardContent>
+                    <div className="overflow-x-auto border border-black">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-slate-700">
-                            <th className="text-left py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Program</th>
-                            <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Rate</th>
-                            <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Price</th>
-                            <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Payment</th>
-                            <th className="text-left py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Investor</th>
+                          <tr className="bg-black text-white">
+                            <th className="text-left py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Program</th>
+                            <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Rate</th>
+                            <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Price</th>
+                            <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Payment</th>
+                            <th className="text-left py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Investor</th>
                           </tr>
                         </thead>
                         <tbody>
                           {lnResult.rateOptions.map((opt: any, idx: number) => (
-                            <tr key={idx} className="border-t border-slate-700/60 hover:bg-slate-700/30 transition-colors">
-                              <td className="py-2.5 px-4 text-slate-300 text-xs">{opt.program || '-'}</td>
-                              <td className="py-2.5 px-4 text-right font-semibold text-purple-300 font-mono">
+                            <tr key={idx} className="border-t border-gray-200 hover:bg-gray-50 transition-colors">
+                              <td className="py-2.5 px-4 text-gray-600 text-xs">{opt.program || '-'}</td>
+                              <td className="py-2.5 px-4 text-right font-bold text-black font-mono">
                                 {safeNumber(opt.rate).toFixed(3)}%
                               </td>
-                              <td className={`py-2.5 px-4 text-right font-mono ${safeNumber(opt.price) >= 100 ? 'text-emerald-400 font-semibold' : 'text-slate-300'}`}>
+                              <td className={`py-2.5 px-4 text-right font-mono ${safeNumber(opt.price) >= 100 ? 'font-bold text-black' : 'text-gray-500'}`}>
                                 {safeNumber(opt.price).toFixed(3)}
                               </td>
-                              <td className="py-2.5 px-4 text-right text-slate-300 font-mono">
+                              <td className="py-2.5 px-4 text-right text-gray-600 font-mono">
                                 {opt.payment > 0 ? formatCurrency(safeNumber(opt.payment)) : '-'}
                               </td>
-                              <td className="py-2.5 px-4 text-slate-400 text-xs">{opt.investor || '-'}</td>
+                              <td className="py-2.5 px-4 text-gray-400 text-xs">{opt.investor || '-'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1862,18 +1838,18 @@ export default function App() {
               )}
 
               {lnUnlocked && !lnLoading && lnResult && (!lnResult.rateOptions || lnResult.rateOptions.length === 0) && (
-                <Card className="mt-6 border border-slate-700/40 bg-slate-900/50 text-white">
+                <Card className="mt-6 border border-gray-200">
                   <CardContent className="py-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">{lnResult.error || 'PPE returned no rates for this scenario'}</span>
-                      <Button type="button" size="sm" variant="ghost" onClick={fetchLnPricing} className="text-xs text-purple-400 hover:text-purple-300 hover:bg-purple-600/10 h-7 px-2">
+                      <span className="text-xs text-gray-400">{lnResult.error || 'PPE returned no rates for this scenario'}</span>
+                      <Button type="button" size="sm" variant="ghost" onClick={fetchLnPricing} className="text-xs text-black hover:bg-gray-100 h-7 px-2">
                         Retry
                       </Button>
                     </div>
                     {lnResult.diag && (
                       <details className="mt-2">
-                        <summary className="text-[10px] text-slate-600 cursor-pointer">Diagnostic</summary>
-                        <pre className="text-[10px] text-slate-600 mt-1 overflow-x-auto max-h-32 whitespace-pre-wrap">{JSON.stringify(lnResult.diag, null, 2)}</pre>
+                        <summary className="text-[10px] text-gray-400 cursor-pointer">Diagnostic</summary>
+                        <pre className="text-[10px] text-gray-400 mt-1 overflow-x-auto max-h-32 whitespace-pre-wrap">{JSON.stringify(lnResult.diag, null, 2)}</pre>
                       </details>
                     )}
                   </CardContent>
@@ -1881,9 +1857,9 @@ export default function App() {
               )}
 
               {/* Submit Loan Button */}
-              <div className="mt-6">
+              <div className="mt-8">
                 <a href="https://sub.defywholesale.com/" target="_blank" rel="noopener noreferrer" className="block">
-                  <Button type="button" size="lg" className="w-full bg-primary hover:bg-primary/90 text-white">
+                  <Button type="button" size="lg" className="w-full">
                     <ExternalLink className="w-4 h-4 mr-2" />Submit + Lock
                   </Button>
                 </a>
@@ -1905,13 +1881,37 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="border-t border-gray-200 bg-white mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <footer className="border-t border-black bg-white mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold text-gray-900 tracking-tight">OpenBroker Labs</span>
+            <div className="flex items-center gap-2.5">
+              <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+                {/* Center open circle — the "broker hub" */}
+                <circle cx="24" cy="24" r="8" stroke="#000" strokeWidth="2.5" />
+                {/* Inner open dot */}
+                <circle cx="24" cy="24" r="2.5" fill="#000" />
+                {/* Radiating connection lines to outer nodes */}
+                <line x1="24" y1="16" x2="24" y2="6" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                <line x1="30.5" y1="19.5" x2="37.5" y2="12.5" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                <line x1="32" y1="24" x2="42" y2="24" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                <line x1="30.5" y1="28.5" x2="37.5" y2="35.5" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                <line x1="24" y1="32" x2="24" y2="42" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                <line x1="17.5" y1="28.5" x2="10.5" y2="35.5" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                <line x1="16" y1="24" x2="6" y2="24" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                <line x1="17.5" y1="19.5" x2="10.5" y2="12.5" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+                {/* Outer nodes */}
+                <circle cx="24" cy="5" r="2.5" fill="#000" />
+                <circle cx="38" cy="12" r="2.5" fill="#000" />
+                <circle cx="43" cy="24" r="2.5" fill="#000" />
+                <circle cx="38" cy="36" r="2.5" fill="#000" />
+                <circle cx="24" cy="43" r="2.5" fill="#000" />
+                <circle cx="10" cy="36" r="2.5" fill="#000" />
+                <circle cx="5" cy="24" r="2.5" fill="#000" />
+                <circle cx="10" cy="12" r="2.5" fill="#000" />
+              </svg>
+              <span className="font-editorial text-sm font-bold text-black tracking-tight">OpenBroker Labs</span>
             </div>
-            <p className="hidden sm:block text-sm text-gray-500">© {new Date().getFullYear()} OpenBroker Labs. All rights reserved.</p>
+            <p className="hidden sm:block text-[10px] text-gray-400 uppercase tracking-widest">&copy; {new Date().getFullYear()} OpenBroker Labs</p>
           </div>
         </div>
       </footer>
