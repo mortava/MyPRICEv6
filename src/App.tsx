@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Calculator, DollarSign, Loader2, CheckCircle2, AlertCircle, Info, ChevronDown, ChevronUp, Menu, X, ExternalLink, Zap, Globe, ShieldCheck, Lock, Unlock } from 'lucide-react'
+import { LiveChat } from '@/components/live-chat'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -750,27 +751,29 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="bg-white border-b border-black relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2.5">
-              <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-                <text x="24" y="36" fontSize="36" fontWeight="800" fill="#000" fontFamily='-apple-system, BlinkMacSystemFont, "Inter", sans-serif' textAnchor="middle" letterSpacing="-0.04em">P</text>
-              </svg>
-              <span className="font-editorial text-2xl font-bold text-black tracking-tight">OpenPrice</span>
+      <header className="bg-white relative" style={{ borderBottom: '1px solid rgba(39, 39, 42, 0.15)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+          <div className="flex items-center justify-between" style={{ padding: '16px 0' }}>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-[10px] bg-[#FAFAFA]">
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+                  <text x="24" y="36" fontSize="36" fontWeight="800" fill="#000" fontFamily='-apple-system, BlinkMacSystemFont, "Inter", sans-serif' textAnchor="middle" letterSpacing="-0.04em">P</text>
+                </svg>
+              </div>
+              <span className="text-[15px] font-semibold text-[#71717A]" style={{ letterSpacing: '-0.02em' }}>OpenBroker Labs · OpenPrice</span>
             </div>
             {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-8">
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gray-500 hover:text-black uppercase tracking-wider transition-colors">Deal Desk</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gray-500 hover:text-black uppercase tracking-wider transition-colors">Pipeline</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gray-500 hover:text-black uppercase tracking-wider transition-colors">AVM</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gray-500 hover:text-black uppercase tracking-wider transition-colors">AUS</a>
+            <nav className="hidden md:flex items-center gap-6">
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-[13px] text-[#A1A1AA] hover:text-black transition-colors duration-150">Deal Desk</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-[13px] text-[#A1A1AA] hover:text-black transition-colors duration-150">Pipeline</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-[13px] text-[#A1A1AA] hover:text-black transition-colors duration-150">AVM</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-[13px] text-[#A1A1AA] hover:text-black transition-colors duration-150">AUS</a>
               <Button variant="outline" size="sm">Sign Out</Button>
             </nav>
             {/* Mobile hamburger */}
             <button
               type="button"
-              className="md:hidden p-2 text-black hover:bg-gray-100"
+              className="md:hidden p-2 text-black rounded-[8px] hover:bg-[#F4F4F5] transition-all duration-150"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -780,13 +783,13 @@ export default function App() {
         </div>
         {/* Mobile dropdown menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-black bg-white absolute left-0 right-0 z-50">
+          <div className="md:hidden bg-white absolute left-0 right-0 z-50" style={{ borderTop: '1px solid rgba(39, 39, 42, 0.15)' }}>
             <div className="px-4 py-3 space-y-1">
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 uppercase tracking-wider" onClick={() => setMobileMenuOpen(false)}>Deal Desk</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 uppercase tracking-wider" onClick={() => setMobileMenuOpen(false)}>Pipeline</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 uppercase tracking-wider" onClick={() => setMobileMenuOpen(false)}>AVM</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 uppercase tracking-wider" onClick={() => setMobileMenuOpen(false)}>AUS</a>
-              <div className="border-t border-gray-200 pt-2 mt-2">
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>Deal Desk</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>Pipeline</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>AVM</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>AUS</a>
+              <div style={{ borderTop: '1px solid rgba(39, 39, 42, 0.1)' }} className="pt-2 mt-2">
                 <Button variant="outline" size="sm" className="w-full" onClick={() => setMobileMenuOpen(false)}>Sign Out</Button>
               </div>
             </div>
@@ -801,15 +804,15 @@ export default function App() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
                   <Calculator className="w-5 h-5 text-black" />
-                  <span className="font-editorial text-2xl font-bold tracking-tight">Loan Details</span>
+                  <span className="text-[22px] font-bold text-black" style={{ letterSpacing: '-0.03em' }}>Loan Details</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
 
                   {/* LOAN INFORMATION SECTION */}
-                  <div className="border-b pb-4">
-                    <h3 className="text-[11px] font-semibold text-gray-400 mb-4 uppercase tracking-[0.2em]">Loan Information</h3>
+                  <div className="pb-4">
+                    <h3 className="text-[11px] font-semibold text-[#71717A] mb-4 uppercase tracking-[0.08em]">Loan Information</h3>
                     {/* LINE 1: Lien Position, Lock Period, Loan Purpose, Term */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
@@ -834,21 +837,21 @@ export default function App() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="loanPurpose" className={hasError('loanPurpose') ? 'text-black font-bold' : ''}>Loan Purpose *</Label>
+                        <Label htmlFor="loanPurpose" className={hasError('loanPurpose') ? 'text-[#EF4444]' : ''}>Loan Purpose *</Label>
                         <Select name="loanPurpose" value={formData.loanPurpose} onValueChange={(v) => handleInputChange('loanPurpose', v)}>
-                          <SelectTrigger id="loanPurpose" className={hasError('loanPurpose') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="loanPurpose" className={hasError('loanPurpose') ? 'border-[#EF4444]' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="purchase">Purchase</SelectItem>
                             <SelectItem value="refinance">Refi Rate/Term</SelectItem>
                             <SelectItem value="cashout">Refinance Cashout</SelectItem>
                           </SelectContent>
                         </Select>
-                        {hasError('loanPurpose') && <p className="text-xs text-black font-bold">{validationErrors.loanPurpose}</p>}
+                        {hasError('loanPurpose') && <p className="text-[12px] text-[#EF4444]">{validationErrors.loanPurpose}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="loanTerm" className={hasError('loanTerm') ? 'text-black font-bold' : ''}>Term *</Label>
+                        <Label htmlFor="loanTerm" className={hasError('loanTerm') ? 'text-[#EF4444]' : ''}>Term *</Label>
                         <Select name="loanTerm" value={formData.loanTerm} onValueChange={(v) => handleInputChange('loanTerm', v)}>
-                          <SelectTrigger id="loanTerm" className={hasError('loanTerm') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="loanTerm" className={hasError('loanTerm') ? 'border-[rgba(239,68,68,0.5)]' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="30">30 Year</SelectItem>
                             <SelectItem value="25">25 Year</SelectItem>
@@ -857,35 +860,35 @@ export default function App() {
                             <SelectItem value="10">10 Year</SelectItem>
                           </SelectContent>
                         </Select>
-                        {hasError('loanTerm') && <p className="text-xs text-black font-bold">{validationErrors.loanTerm}</p>}
+                        {hasError('loanTerm') && <p className="text-[12px] text-[#EF4444]">{validationErrors.loanTerm}</p>}
                       </div>
                     </div>
 
                     {/* LINE 2: Appraised Value/Sales Price, Loan Amount, LTV, CLTV (2nd/HELOC only), Amortization */}
                     <div className={`grid grid-cols-1 sm:grid-cols-2 ${formData.lienPosition !== '1st' ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4 mt-4`}>
                       <div className="space-y-2">
-                        <Label htmlFor="propertyValue" className={hasError('propertyValue') ? 'text-black font-bold' : ''}>Value/Sales Price *</Label>
+                        <Label htmlFor="propertyValue" className={hasError('propertyValue') ? 'text-[#EF4444]' : ''}>Value/Sales Price *</Label>
                         <Input
                           id="propertyValue"
                           name="propertyValue"
                           value={formData.propertyValue}
                           onChange={(e) => handleInputChange('propertyValue', formatNumberInput(e.target.value))}
                           icon={<DollarSign className="w-4 h-4" />}
-                          className={hasError('propertyValue') ? 'border-black' : ''}
+                          className={hasError('propertyValue') ? 'border-[rgba(239,68,68,0.5)]' : ''}
                         />
-                        {hasError('propertyValue') && <p className="text-xs text-black font-bold">{validationErrors.propertyValue}</p>}
+                        {hasError('propertyValue') && <p className="text-[12px] text-[#EF4444]">{validationErrors.propertyValue}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="loanAmount" className={hasError('loanAmount') ? 'text-black font-bold' : ''}>Loan Amount *</Label>
+                        <Label htmlFor="loanAmount" className={hasError('loanAmount') ? 'text-[#EF4444]' : ''}>Loan Amount *</Label>
                         <Input
                           id="loanAmount"
                           name="loanAmount"
                           value={formData.loanAmount}
                           onChange={(e) => handleInputChange('loanAmount', formatNumberInput(e.target.value))}
                           icon={<DollarSign className="w-4 h-4" />}
-                          className={hasError('loanAmount') ? 'border-black' : ''}
+                          className={hasError('loanAmount') ? 'border-[rgba(239,68,68,0.5)]' : ''}
                         />
-                        {hasError('loanAmount') && <p className="text-xs text-black font-bold">{validationErrors.loanAmount}</p>}
+                        {hasError('loanAmount') && <p className="text-[12px] text-[#EF4444]">{validationErrors.loanAmount}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="ltv" className="flex items-center gap-1">
@@ -971,12 +974,12 @@ export default function App() {
                   </div>
 
                   {/* PROPERTY DETAILS SECTION - Merged Location and Property Details */}
-                  <div className="border-b pb-4">
-                    <h3 className="text-[11px] font-semibold text-gray-400 mb-4 uppercase tracking-[0.2em]">Property Details</h3>
+                  <div className="pb-4">
+                    <h3 className="text-[11px] font-semibold text-[#71717A] mb-4 uppercase tracking-[0.08em]">Property Details</h3>
                     {/* LINE 1: Location fields */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="propertyZip" className={hasError('propertyZip') ? 'text-black font-bold' : ''}>
+                        <Label htmlFor="propertyZip" className={hasError('propertyZip') ? 'text-[#EF4444]' : ''}>
                           ZIP Code * {zipLoading && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
                         </Label>
                         <Input
@@ -985,19 +988,19 @@ export default function App() {
                           maxLength={5}
                           value={formData.propertyZip}
                           onChange={(e) => handleInputChange('propertyZip', e.target.value.replace(/\D/g, ''))}
-                          className={hasError('propertyZip') ? 'border-black' : ''}
+                          className={hasError('propertyZip') ? 'border-[rgba(239,68,68,0.5)]' : ''}
                           placeholder="Enter ZIP to auto-fill"
                           autoComplete="postal-code"
                         />
-                        {hasError('propertyZip') && <p className="text-xs text-black font-bold">{validationErrors.propertyZip}</p>}
+                        {hasError('propertyZip') && <p className="text-[12px] text-[#EF4444]">{validationErrors.propertyZip}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="propertyState" className={hasError('propertyState') ? 'text-black font-bold' : ''}>State *</Label>
+                        <Label htmlFor="propertyState" className={hasError('propertyState') ? 'text-[#EF4444]' : ''}>State *</Label>
                         <Select name="propertyState" value={formData.propertyState} onValueChange={(v) => handleInputChange('propertyState', v)}>
-                          <SelectTrigger id="propertyState" className={hasError('propertyState') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="propertyState" className={hasError('propertyState') ? 'border-[rgba(239,68,68,0.5)]' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>{US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                         </Select>
-                        {hasError('propertyState') && <p className="text-xs text-black font-bold">{validationErrors.propertyState}</p>}
+                        {hasError('propertyState') && <p className="text-[12px] text-[#EF4444]">{validationErrors.propertyState}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="propertyCounty">County</Label>
@@ -1011,21 +1014,21 @@ export default function App() {
                     {/* LINE 2: Property type fields */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                       <div className="space-y-2">
-                        <Label htmlFor="occupancyType" className={hasError('occupancyType') ? 'text-black font-bold' : ''}>Property Use *</Label>
+                        <Label htmlFor="occupancyType" className={hasError('occupancyType') ? 'text-[#EF4444]' : ''}>Property Use *</Label>
                         <Select name="occupancyType" value={formData.occupancyType} onValueChange={(v) => handleInputChange('occupancyType', v)}>
-                          <SelectTrigger id="occupancyType" className={hasError('occupancyType') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="occupancyType" className={hasError('occupancyType') ? 'border-[rgba(239,68,68,0.5)]' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="primary">Primary Residence</SelectItem>
                             <SelectItem value="secondary">Second Home</SelectItem>
                             <SelectItem value="investment">Investment</SelectItem>
                           </SelectContent>
                         </Select>
-                        {hasError('occupancyType') && <p className="text-xs text-black font-bold">{validationErrors.occupancyType}</p>}
+                        {hasError('occupancyType') && <p className="text-[12px] text-[#EF4444]">{validationErrors.occupancyType}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="propertyType" className={hasError('propertyType') ? 'text-black font-bold' : ''}>Property Type *</Label>
+                        <Label htmlFor="propertyType" className={hasError('propertyType') ? 'text-[#EF4444]' : ''}>Property Type *</Label>
                         <Select name="propertyType" value={formData.propertyType} onValueChange={(v) => handleInputChange('propertyType', v)}>
-                          <SelectTrigger id="propertyType" className={hasError('propertyType') ? 'border-black' : ''}><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="propertyType" className={hasError('propertyType') ? 'border-[rgba(239,68,68,0.5)]' : ''}><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="sfr">Single Family</SelectItem>
                             <SelectItem value="condo">Condo</SelectItem>
@@ -1037,7 +1040,7 @@ export default function App() {
                             <SelectItem value="blanket" disabled className="text-gray-400">Blanket Investor</SelectItem>
                           </SelectContent>
                         </Select>
-                        {hasError('propertyType') && <p className="text-xs text-black font-bold">{validationErrors.propertyType}</p>}
+                        {hasError('propertyType') && <p className="text-[12px] text-[#EF4444]">{validationErrors.propertyType}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="structureType">Structure Type</Label>
@@ -1089,32 +1092,32 @@ export default function App() {
                   </div>
 
                   {/* BORROWER DETAILS SECTION */}
-                  <div className="border-b pb-4">
-                    <h3 className="text-[11px] font-semibold text-gray-400 mb-4 uppercase tracking-[0.2em]">Borrower Details</h3>
+                  <div className="pb-4">
+                    <h3 className="text-[11px] font-semibold text-[#71717A] mb-4 uppercase tracking-[0.08em]">Borrower Details</h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="creditScore" className={hasError('creditScore') ? 'text-black font-bold' : ''}>Estimated Credit Score *</Label>
+                        <Label htmlFor="creditScore" className={hasError('creditScore') ? 'text-[#EF4444]' : ''}>Estimated Credit Score *</Label>
                         <Input
                           id="creditScore"
                           name="creditScore"
                           maxLength={3}
                           value={formData.creditScore}
                           onChange={(e) => handleInputChange('creditScore', e.target.value.replace(/\D/g, ''))}
-                          className={hasError('creditScore') ? 'border-black' : ''}
+                          className={hasError('creditScore') ? 'border-[rgba(239,68,68,0.5)]' : ''}
                         />
-                        {hasError('creditScore') && <p className="text-xs text-black font-bold">{validationErrors.creditScore}</p>}
+                        {hasError('creditScore') && <p className="text-[12px] text-[#EF4444]">{validationErrors.creditScore}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="dti" className={hasError('dti') ? 'text-black font-bold' : ''}>DTI (%) *</Label>
+                        <Label htmlFor="dti" className={hasError('dti') ? 'text-[#EF4444]' : ''}>DTI (%) *</Label>
                         <Input
                           id="dti"
                           name="dti"
                           maxLength={2}
                           value={formData.dti}
                           onChange={(e) => handleInputChange('dti', e.target.value.replace(/\D/g, ''))}
-                          className={hasError('dti') ? 'border-black' : ''}
+                          className={hasError('dti') ? 'border-[rgba(239,68,68,0.5)]' : ''}
                         />
-                        {hasError('dti') && <p className="text-xs text-black font-bold">{validationErrors.dti}</p>}
+                        {hasError('dti') && <p className="text-[12px] text-[#EF4444]">{validationErrors.dti}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="citizenship">Citizenship</Label>
@@ -1175,8 +1178,8 @@ export default function App() {
 
                   {/* INVESTOR DETAILS SECTION - Conditional */}
                   {showInvestorDetails && (
-                    <div className="border-b pb-4 bg-gray-50 -mx-6 px-6 py-4 border-l-2 border-l-black">
-                      <h3 className="text-[11px] font-semibold text-gray-400 mb-4 uppercase tracking-[0.2em]">Investor Details</h3>
+                    <div className="pb-4 bg-[#FAFAFA] -mx-5 px-5 py-4 rounded-[12px]" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
+                      <h3 className="text-[11px] font-semibold text-[#71717A] mb-4 uppercase tracking-[0.08em]">Investor Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="prepayPeriod">Prepay Period</Label>
@@ -1306,11 +1309,11 @@ export default function App() {
                   )}
 
                   {/* ADDITIONAL DETAILS SECTION - Collapsible */}
-                  <div className="border-b pb-4">
+                  <div className="pb-4">
                     <button
                       type="button"
                       onClick={() => setShowOtherDetails(!showOtherDetails)}
-                      className="flex items-center gap-2 text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em] hover:text-black transition-colors"
+                      className="flex items-center gap-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.08em] hover:text-black transition-colors"
                     >
                       {showOtherDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       Additional Details
@@ -1335,8 +1338,8 @@ export default function App() {
                   </div>
 
                   {error && (
-                    <div className="flex items-center gap-2 p-3 bg-white border-2 border-black text-black text-sm">
-                      <AlertCircle className="w-4 h-4" />{error}
+                    <div className="status-error flex items-center gap-2 text-[13px]">
+                      <AlertCircle className="w-4 h-4 shrink-0" />{error}
                     </div>
                   )}
 
@@ -1354,12 +1357,14 @@ export default function App() {
               <>
                 {/* Cross Collateral or ML Skipped: Show "Pass to National Rate Card" */}
                 {(formData.isCrossCollateralized || result.mlSkipped) && (!Array.isArray(result.programs) || result.programs.length === 0) ? (
-                  <Card className="border-2 border-black bg-black text-white overflow-hidden">
+                  <Card className="bg-black text-white overflow-hidden" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
                     <CardContent className="py-10">
                       <div className="flex flex-col items-center gap-4">
-                        <Globe className="w-6 h-6 text-white" />
-                        <p className="font-editorial text-xl font-bold text-white tracking-tight">Pass to National Rate Card</p>
-                        <div className="flex items-center gap-1.5 text-[10px] text-white/70 border border-white/30 px-3 py-1 font-medium uppercase tracking-widest">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-[10px] bg-white/10">
+                          <Globe className="w-6 h-6 text-white" />
+                        </div>
+                        <p className="text-[18px] font-bold text-white" style={{ letterSpacing: '-0.02em' }}>Pass to National Rate Card</p>
+                        <div className="flex items-center gap-1.5 text-[11px] text-white/70 px-2 py-0.5 font-medium uppercase bg-white/10 rounded-[4px]">
                           <ShieldCheck className="w-3 h-3" />Live Pricing
                         </div>
                       </div>
@@ -1367,15 +1372,15 @@ export default function App() {
                   </Card>
                 ) : (
                 <>
-                <Card className="border-2 border-black">
+                <Card>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between flex-wrap gap-4">
                       <CardTitle className="text-lg flex items-center gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-black" />
-                        <span className="font-editorial text-2xl font-bold">Pricing Result</span>
+                        <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
+                        <span className="text-[22px] font-bold text-black" style={{ letterSpacing: '-0.03em' }}>Pricing Result</span>
                       </CardTitle>
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 text-[10px] text-black border border-black px-2.5 py-1 font-medium uppercase tracking-widest">
+                        <div className="status-success flex items-center gap-1.5 text-[10px] font-medium uppercase" style={{ letterSpacing: '0.08em', padding: '3px 8px' }}>
                           <CheckCircle2 className="w-3 h-3" />Live
                         </div>
                         {result.apiError && (
@@ -1388,40 +1393,40 @@ export default function App() {
                   </CardHeader>
                   <CardContent>
                     {/* Main Pricing Metrics */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-0 border border-black">
-                      <div className="p-4 text-center border-r border-b border-black last:border-r-0">
-                        <div className="font-editorial text-3xl font-bold text-black">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-0 rounded-[12px] overflow-hidden" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
+                      <div className="p-4 text-center" style={{ borderRight: '1px solid rgba(39, 39, 42, 0.12)', borderBottom: '1px solid rgba(39, 39, 42, 0.12)' }}>
+                        <div className="text-[28px] font-bold text-black" style={{ letterSpacing: '-0.04em' }}>
                           {targetPricing ? formatPercent(targetPricing.rate) : formatPercent(safeNumber(result.rate))}
                         </div>
-                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">Rate</div>
+                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">Rate</div>
                       </div>
-                      <div className="p-4 text-center border-r border-b border-black">
-                        <div className="font-editorial text-2xl font-bold text-black">
+                      <div className="p-4 text-center">
+                        <div className="text-[22px] font-bold text-black">
                           {targetPricing ? targetPricing.price.toFixed(3) : '100.000'}
                         </div>
-                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">Price</div>
+                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">Price</div>
                       </div>
-                      <div className="p-4 text-center border-r border-b border-black">
-                        <div className="font-editorial text-2xl font-bold text-black">
+                      <div className="p-4 text-center">
+                        <div className="text-[22px] font-bold text-black">
                           {targetPricing ? formatPercent(targetPricing.apr) : formatPercent(safeNumber(result.apr))}
                         </div>
-                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">APR</div>
+                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">APR</div>
                       </div>
-                      <div className="p-4 text-center border-r border-b border-black">
-                        <div className="font-editorial text-2xl font-bold text-black">
+                      <div className="p-4 text-center">
+                        <div className="text-[22px] font-bold text-black">
                           {targetPricing && targetPricing.payment > 0 ? formatCurrency(targetPricing.payment) : formatCurrency(safeNumber(result.monthlyPayment))}
                         </div>
-                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">Payment</div>
+                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">Payment</div>
                       </div>
-                      <div className="p-4 text-center border-r border-b border-black">
-                        <div className="font-editorial text-2xl font-bold text-black">
+                      <div className="p-4 text-center">
+                        <div className="text-[22px] font-bold text-black">
                           {targetPricing ? targetPricing.points.toFixed(3) : safeNumber(result.points).toFixed(3)}
                         </div>
-                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">Points</div>
+                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">Points</div>
                       </div>
-                      <div className="p-4 text-center border-b border-black">
-                        <div className="font-editorial text-2xl font-bold text-black">{safeNumber(result.ltvRatio).toFixed(1)}%</div>
-                        <div className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">LTV</div>
+                      <div className="p-4 text-center">
+                        <div className="text-[22px] font-bold text-black">{safeNumber(result.ltvRatio).toFixed(1)}%</div>
+                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">LTV</div>
                       </div>
                     </div>
 
@@ -1431,13 +1436,13 @@ export default function App() {
                         <div className="text-[11px] font-semibold text-gray-400 mb-3 uppercase tracking-[0.2em]">
                           Pricing Adjustments Applied
                         </div>
-                        <div className="border border-black overflow-hidden">
+                        <div className="overflow-hidden rounded-[12px]" style={{ border: '1px solid rgba(39, 39, 42, 0.12)' }}>
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="bg-black text-white">
-                                <th className="text-left py-2.5 px-3 text-[10px] font-medium uppercase tracking-widest w-24">Rate</th>
-                                <th className="text-left py-2.5 px-3 text-[10px] font-medium uppercase tracking-widest w-24">Price</th>
-                                <th className="text-left py-2.5 px-3 text-[10px] font-medium uppercase tracking-widest">Description</th>
+                              <tr style={{ borderBottom: '1px solid rgba(39, 39, 42, 0.15)' }}>
+                                <th className="text-left py-2.5 px-3 text-[11px] font-semibold uppercase text-[#71717A] w-24" style={{ letterSpacing: '0.06em' }}>Rate</th>
+                                <th className="text-left py-2.5 px-3 text-[11px] font-semibold uppercase text-[#71717A] w-24" style={{ letterSpacing: '0.06em' }}>Price</th>
+                                <th className="text-left py-2.5 px-3 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Description</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1468,7 +1473,7 @@ export default function App() {
                 {Array.isArray(result.programs) && result.programs.length > 0 ? (
                   <Card className="mt-6 border border-gray-200">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em]">Available Programs ({result.programs.filter(p => p && Array.isArray(p.rateOptions) && filterRateOptionsByPrice(p.rateOptions).length > 0).length})</CardTitle>
+                      <CardTitle className="text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.08em]">Available Programs ({result.programs.filter(p => p && Array.isArray(p.rateOptions) && filterRateOptionsByPrice(p.rateOptions).length > 0).length})</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {result.programs.map((program, idx) => {
@@ -1631,11 +1636,11 @@ export default function App() {
 
               {/* EXPANDED MARKET RATES - Lender Price (above Submit button) */}
               {lpLoading && !lpResult && (
-                <Card className="mt-6 border-2 border-black bg-black text-white overflow-hidden">
+                <Card className="mt-6 bg-black text-white overflow-hidden" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
                   <CardContent className="py-10">
                     <div className="flex flex-col items-center justify-center gap-4">
                       <Globe className="w-6 h-6 text-white animate-pulse" />
-                      <span className="text-xs text-white/60 font-medium uppercase tracking-[0.2em]">Scanning wholesale pricing engines</span>
+                      <span className="text-[11px] text-white/60 font-semibold uppercase" style={{ letterSpacing: '0.08em' }}>Scanning wholesale pricing engines</span>
                       <div className="w-12 h-px bg-white/30 overflow-hidden">
                         <div className="w-full h-full bg-white animate-pulse" />
                       </div>
@@ -1663,17 +1668,17 @@ export default function App() {
                   ? ` - ${prepayMonths} Month Prepay`
                   : ''
                 return (
-                  <Card className="mt-6 border-2 border-black bg-black text-white overflow-hidden">
+                  <Card className="mt-6 bg-black text-white overflow-hidden" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between flex-wrap gap-3">
                         <div className="flex items-center gap-3">
                           <Zap className="w-4 h-4 text-white" />
-                          <CardTitle className="font-editorial text-lg font-bold text-white tracking-tight">
+                          <CardTitle className="text-[18px] font-bold text-white" style={{ letterSpacing: '-0.02em' }}>
                             National Wholesale Rates{prepayLabel}
                           </CardTitle>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5 text-[10px] text-white/70 border border-white/30 px-2.5 py-1 font-medium uppercase tracking-widest">
+                          <div className="flex items-center gap-1.5 text-[11px] text-white/70 px-2 py-0.5 font-medium uppercase bg-white/10 rounded-[4px]">
                             <ShieldCheck className="w-3 h-3" />Verified
                           </div>
                           <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">
@@ -1738,12 +1743,14 @@ export default function App() {
 
               {/* ============ LOANNEX PIN GATE + RESULTS ============ */}
               {result && !lnUnlocked && (
-                <Card className="mt-6 border border-gray-300 bg-gray-50">
+                <Card className="mt-6">
                   <CardContent className="py-8">
                     <div className="flex flex-col items-center gap-3">
-                      <Lock className="w-5 h-5 text-gray-400" />
-                      <p className="font-editorial text-base font-bold text-black">Additional Pricing Source</p>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-widest">Enter access code to unlock</p>
+                      <div className="flex items-center justify-center w-12 h-12 rounded-[10px] bg-[#FAFAFA]">
+                        <Lock className="w-5 h-5 text-[#A1A1AA]" />
+                      </div>
+                      <p className="text-[15px] font-semibold text-black" style={{ letterSpacing: '-0.02em' }}>Additional Pricing Source</p>
+                      <p className="text-[13px] text-[#A1A1AA]">Enter access code to unlock</p>
                       <div className="flex items-center gap-2 mt-2">
                         <Input
                           type="password"
@@ -1783,17 +1790,17 @@ export default function App() {
               )}
 
               {lnUnlocked && !lnLoading && lnResult && lnResult.rateOptions && lnResult.rateOptions.length > 0 && (
-                <Card className="mt-6 border-2 border-black bg-white">
+                <Card className="mt-6">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between flex-wrap gap-3">
                       <div className="flex items-center gap-3">
                         <Zap className="w-4 h-4 text-black" />
-                        <CardTitle className="font-editorial text-lg font-bold text-black tracking-tight">
+                        <CardTitle className="text-[18px] font-bold text-black" style={{ letterSpacing: '-0.02em' }}>
                           OpenBroker AI PPE
                         </CardTitle>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 text-[10px] text-black border border-black px-2.5 py-1 font-medium uppercase tracking-widest">
+                        <div className="status-success flex items-center gap-1.5 text-[11px] font-medium uppercase" style={{ letterSpacing: '0.08em', padding: '3px 8px' }}>
                           <ShieldCheck className="w-3 h-3" />Verified
                         </div>
                         <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">
@@ -1803,15 +1810,15 @@ export default function App() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-x-auto border border-black">
+                    <div className="overflow-x-auto rounded-[12px]" style={{ border: '1px solid rgba(39, 39, 42, 0.12)' }}>
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-black text-white">
-                            <th className="text-left py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Program</th>
-                            <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Rate</th>
-                            <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Price</th>
-                            <th className="text-right py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Payment</th>
-                            <th className="text-left py-2.5 px-4 text-[10px] font-medium uppercase tracking-widest">Investor</th>
+                          <tr style={{ borderBottom: '1px solid rgba(39, 39, 42, 0.15)' }}>
+                            <th className="text-left py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Program</th>
+                            <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Rate</th>
+                            <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Price</th>
+                            <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Payment</th>
+                            <th className="text-left py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Investor</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1881,40 +1888,21 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="border-t border-black bg-white mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <footer className="bg-white mt-16" style={{ borderTop: '1px solid rgba(39, 39, 42, 0.1)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10" style={{ padding: '12px 40px' }}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-                {/* Center open circle — the "broker hub" */}
-                <circle cx="24" cy="24" r="8" stroke="#000" strokeWidth="2.5" />
-                {/* Inner open dot */}
-                <circle cx="24" cy="24" r="2.5" fill="#000" />
-                {/* Radiating connection lines to outer nodes */}
-                <line x1="24" y1="16" x2="24" y2="6" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                <line x1="30.5" y1="19.5" x2="37.5" y2="12.5" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                <line x1="32" y1="24" x2="42" y2="24" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                <line x1="30.5" y1="28.5" x2="37.5" y2="35.5" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                <line x1="24" y1="32" x2="24" y2="42" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                <line x1="17.5" y1="28.5" x2="10.5" y2="35.5" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                <line x1="16" y1="24" x2="6" y2="24" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                <line x1="17.5" y1="19.5" x2="10.5" y2="12.5" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-                {/* Outer nodes */}
-                <circle cx="24" cy="5" r="2.5" fill="#000" />
-                <circle cx="38" cy="12" r="2.5" fill="#000" />
-                <circle cx="43" cy="24" r="2.5" fill="#000" />
-                <circle cx="38" cy="36" r="2.5" fill="#000" />
-                <circle cx="24" cy="43" r="2.5" fill="#000" />
-                <circle cx="10" cy="36" r="2.5" fill="#000" />
-                <circle cx="5" cy="24" r="2.5" fill="#000" />
-                <circle cx="10" cy="12" r="2.5" fill="#000" />
-              </svg>
-              <span className="font-editorial text-sm font-bold text-black tracking-tight">OpenBroker Labs</span>
+            <span className="text-[12px] text-[#71717A]">&copy; {new Date().getFullYear()} OpenBroker Labs</span>
+            <div className="flex items-center gap-5">
+              <a href="#" className="text-[12px] text-[#A1A1AA] hover:text-black transition-colors duration-150">Privacy</a>
+              <a href="#" className="text-[12px] text-[#A1A1AA] hover:text-black transition-colors duration-150">Terms</a>
+              <a href="#" className="text-[12px] text-[#A1A1AA] hover:text-black transition-colors duration-150">Support</a>
             </div>
-            <p className="hidden sm:block text-[10px] text-gray-400 uppercase tracking-widest">&copy; {new Date().getFullYear()} OpenBroker Labs</p>
           </div>
         </div>
       </footer>
+
+      {/* Live Chat Widget */}
+      <LiveChat />
     </div>
   )
 }
