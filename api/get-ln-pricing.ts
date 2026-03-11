@@ -6,10 +6,10 @@ export const config = { maxDuration: 60 }
 // ================= Field Mapping =================
 function mapFormToLN(body: any): Record<string, string> {
   const purposeMap: Record<string, string> = {
-    purchase: 'Purchase', refinance: 'Rate/Term Refinance', cashout: 'Cash-Out Refinance',
+    purchase: 'Purchase', refinance: 'R/T Refi', cashout: 'C/O Refi',
   }
   const occupancyMap: Record<string, string> = {
-    primary: 'Primary', secondary: 'Second Home', investment: 'Investment',
+    primary: 'Primary', secondary: 'Secondary', investment: 'Investment',
   }
   const propertyMap: Record<string, string> = {
     sfr: 'SFR', condo: 'Condo', townhouse: 'Townhouse',
@@ -40,6 +40,12 @@ function mapFormToLN(body: any): Record<string, string> {
   const ppVal = isInvestment ? '5 Year' : 'None'
   const finProps = isInvestment ? '1' : ''
 
+  // Non-DSCR income qualification fields (LN requires these to return rates)
+  const monthlyIncome = !isDSCR ? String(body.monthlyIncome || '25000') : ''
+  const propertyExpenses = !isDSCR ? String(body.propertyExpenses || '500') : ''
+  const liabilities = !isDSCR ? String(body.liabilities || '2000') : ''
+  const householdSize = !isDSCR ? '1' : ''
+
   return {
     'Loan Type': loanTypeMap[body.loanType] || 'First Lien',
     'Purpose': purposeMap[body.loanPurpose] || 'Purchase',
@@ -54,13 +60,18 @@ function mapFormToLN(body: any): Record<string, string> {
     'First Lien Amount': loanAmount,
     'FICO': creditScore,
     'DTI': String(body.dti || ''),
-    'Escrows': body.impoundType === 'noescrow' || body.impoundType === '3' ? 'No' : 'Yes',
+    'Escrows': body.impoundType === 'noescrow' || body.impoundType === '3' ? 'Waived' : 'Yes',
     // DSCR/Investment fields — include label variants
     'DSCR': dscrVal, 'DSCR Ratio': dscrVal, 'DSCR %': dscrVal,
     'Mo. Rental Income': rentalVal, 'Monthly Rental Income': rentalVal, 'Gross Rental Income': rentalVal,
     'Prepay Penalty': ppVal, 'Prepayment Penalty': ppVal,
     'Months Reserves': '12', 'Reserves': '12',
     '# of Financed Properties': finProps, 'Number of Financed Properties': finProps, 'Financed Properties': finProps,
+    // Non-DSCR income qualification fields
+    'Income': monthlyIncome, 'Monthly Income': monthlyIncome,
+    'Property Expenses': propertyExpenses,
+    'Liabilities': liabilities, 'Monthly Liabilities': liabilities,
+    'Household Size': householdSize,
   }
 }
 
@@ -418,7 +429,8 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
 
   // Fill numeric fields (includes DSCR-specific fields discovered after Income Doc selection)
   var numerics = ['Appraised Value', 'Purchase Price', 'First Lien Amount', 'FICO', 'DTI',
-    'Months Reserves', 'DSCR', 'Mo. Rental Income', '# of Financed Properties'];
+    'Months Reserves', 'DSCR', 'Mo. Rental Income', '# of Financed Properties',
+    'Income', 'Monthly Income', 'Property Expenses', 'Liabilities', 'Monthly Liabilities', 'Household Size'];
   for (var ni = 0; ni < numerics.length; ni++) {
     var nkey = numerics[ni];
     if (fieldMap[nkey]) {
@@ -446,8 +458,9 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     return JSON.stringify({ success: false, error: 'no_get_price_button', diag: diag });
   }
 
-  // Wait for results table to appear
+  // Wait for results table OR "Get Qualified Price" income form
   var resultsFound = false;
+  var qualifiedPriceHandled = false;
   for (var attempt = 0; attempt < 10; attempt++) {
     await sleep(1500);
     // Check for standard HTML table OR PrimeNG table OR any data grid
@@ -461,6 +474,41 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       }
     }
     if (resultsFound) break;
+
+    // Check for "Get Qualified Price" second-step form (non-DSCR income qualification)
+    var bodyText = (document.body.innerText || '');
+    if (!qualifiedPriceHandled && bodyText.indexOf('Get Qualified Price') >= 0) {
+      diag.steps.push('qualified_price_form_at: ' + ((attempt+1)*1.5) + 's');
+
+      // Fill income qualification fields that appeared after Get Price
+      var qualFields = ['Income', 'Monthly Income', 'Property Expenses', 'Liabilities',
+        'Monthly Liabilities', 'Reserves', 'Household Size'];
+      for (var qi = 0; qi < qualFields.length; qi++) {
+        if (fieldMap[qualFields[qi]]) {
+          await setNumeric(qualFields[qi], fieldMap[qualFields[qi]]);
+        }
+      }
+      await sleep(500);
+
+      // Click "Get Qualified Price" button
+      var qualBtn = null;
+      var allBtns2 = document.querySelectorAll('button');
+      for (var qbi = 0; qbi < allBtns2.length; qbi++) {
+        var btnText = (allBtns2[qbi].textContent || '').trim();
+        if (btnText.indexOf('Get Qualified Price') >= 0 || btnText.indexOf('Qualified Price') >= 0) {
+          qualBtn = allBtns2[qbi]; break;
+        }
+      }
+      if (qualBtn) {
+        qualBtn.click();
+        diag.steps.push('clicked_get_qualified_price');
+      } else {
+        diag.steps.push('no_qualified_price_button');
+      }
+      qualifiedPriceHandled = true;
+      continue; // keep waiting for results table
+    }
+
     // Check for loading spinners (still waiting)
     var spinners = document.querySelectorAll('.p-progress-spinner, .loading, [class*=spinner], [class*=loading]');
     if (spinners.length > 0 && attempt < 9) continue;
