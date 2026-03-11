@@ -467,10 +467,21 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     var tables = document.querySelectorAll('table, p-table, .p-datatable');
     for (var ti = 0; ti < tables.length; ti++) {
       var rows = tables[ti].querySelectorAll('tr');
+      // DSCR: rates appear directly (many rows). Non-DSCR: products appear (fewer rows)
       if (rows.length > 2) {
         diag.steps.push('results_at: ' + ((attempt+1)*1.5) + 's, rows: ' + rows.length + ', tag: ' + tables[ti].tagName);
         resultsFound = true;
         break;
+      }
+      // Check for product selection view (1 header + product rows)
+      if (rows.length === 2) {
+        var cellText = (rows[1].textContent || '').trim();
+        // If it's a real product row (not just "Choose a product" placeholder)
+        if (cellText.indexOf('Choose a product') < 0 && cellText.length > 10) {
+          diag.steps.push('product_row_at: ' + ((attempt+1)*1.5) + 's, text: ' + cellText.substring(0, 80));
+          resultsFound = true;
+          break;
+        }
       }
     }
     if (resultsFound) break;
@@ -502,10 +513,22 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       if (qualBtn) {
         qualBtn.click();
         diag.steps.push('clicked_get_qualified_price');
+        await sleep(2000); // extra wait for qualified results to load
       } else {
         diag.steps.push('no_qualified_price_button');
       }
       qualifiedPriceHandled = true;
+
+      // Capture income field values for diagnostics
+      var incomeInputs = document.querySelectorAll('input[type=text], input:not([type])');
+      var incVals = [];
+      for (var ivi = 0; ivi < incomeInputs.length; ivi++) {
+        var iv = incomeInputs[ivi];
+        if (iv.value && iv.value !== '' && parseFloat(iv.value.replace(/[,$]/g, '')) > 0) {
+          incVals.push(iv.value);
+        }
+      }
+      diag.incomeFieldValues = incVals.slice(0, 15);
       continue; // keep waiting for results table
     }
 
