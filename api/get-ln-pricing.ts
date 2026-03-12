@@ -560,13 +560,31 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     var fullText = (document.body.innerText || '');
     var gpIdx = fullText.indexOf('Get Price');
     diag.afterGetPrice = gpIdx >= 0 ? fullText.substring(gpIdx, gpIdx + 800) : fullText.substring(0, 1500);
-    // Count table elements for diagnostics
+    // Count table elements and capture row content for diagnostics
     var allTbls = document.querySelectorAll('table, p-table, .p-datatable');
     var tblInfo = [];
     for (var tbi = 0; tbi < allTbls.length; tbi++) {
-      tblInfo.push({ tag: allTbls[tbi].tagName, rows: allTbls[tbi].querySelectorAll('tr').length });
+      var tblRows = allTbls[tbi].querySelectorAll('tr');
+      var rowTexts = [];
+      for (var tri = 0; tri < tblRows.length && tri < 5; tri++) {
+        rowTexts.push((tblRows[tri].textContent || '').trim().substring(0, 200));
+      }
+      tblInfo.push({ tag: allTbls[tbi].tagName, rows: tblRows.length, content: rowTexts });
     }
     diag.tableElements = tblInfo;
+
+    // Capture all visible text around "Eligible Products" for context
+    var epIdx = fullText.indexOf('Eligible Products');
+    if (epIdx >= 0) {
+      diag.eligibleProductsContext = fullText.substring(epIdx, epIdx + 600);
+    }
+
+    // Check if "Choose a product" is actually the only row content (true empty state)
+    var chooseText = fullText.indexOf('Choose a product to see pricing');
+    diag.hasChooseProductText = chooseText >= 0;
+
+    // Check for "View Ineligible Products" — if present, there ARE results but none eligible
+    diag.hasIneligibleLink = fullText.indexOf('View Ineligible') >= 0;
     return JSON.stringify({ success: true, rates: [], diag: diag });
   }
 
