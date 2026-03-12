@@ -40,11 +40,12 @@ function mapFormToLN(body: any): Record<string, string> {
   const ppVal = isInvestment ? '5 Year' : 'None'
   const finProps = isInvestment ? '1' : ''
 
-  // Non-DSCR income qualification fields (LN requires these to return rates)
-  const monthlyIncome = !isDSCR ? String(body.monthlyIncome || '25000') : ''
-  const propertyExpenses = !isDSCR ? String(body.propertyExpenses || '500') : ''
-  const liabilities = !isDSCR ? String(body.liabilities || '2000') : ''
-  const householdSize = !isDSCR ? '1' : ''
+  // Income qualification fields — LN may show "Get Qualified Price" for any scenario
+  // Always provide defaults so the qualified price form can be filled if it appears
+  const monthlyIncome = String(body.monthlyIncome || '25000')
+  const propertyExpenses = String(body.propertyExpenses || '500')
+  const liabilities = String(body.liabilities || '2000')
+  const householdSize = '1'
 
   return {
     'Loan Type': loanTypeMap[body.loanType] || 'First Lien',
