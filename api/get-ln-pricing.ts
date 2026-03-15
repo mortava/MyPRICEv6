@@ -497,71 +497,11 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       diag.steps.push('qualified_price_form_at: ' + ((attempt+1)*1.5) + 's');
 
       // Fill qualified price sub-form fields
-      // Strategy: find ALL visible input fields between "Get Price" and "Get Qualified Price" buttons
-      // and match them by their preceding label text
+      // Strategy: find "Get Qualified Price" button, scope to its parent container,
+      // then fill only inputs WITHIN that scoped section
       await sleep(500); // let Angular render the qualified price form
 
-      // Build a map of visible labels → next input in the qualified price section
-      var qualLabels = document.querySelectorAll('label, span, div');
-      var qualFieldMap = {
-        'rental': fieldMap['Mo. Rental Income'] || '5000',
-        'property exp': fieldMap['Property Expenses'] || '500',
-        'liabilit': fieldMap['Liabilities'] || '2000',
-        'reserve': fieldMap['Reserves'] || '12',
-        'financed prop': fieldMap['# of Financed Properties'] || '1',
-        '# of financed': fieldMap['# of Financed Properties'] || '1',
-      };
-
-      // Walk text nodes and fill each qualified price field ONCE
-      var filledQual = 0;
-      var filledQualKeys = {};  // track which keywords already matched
-      var filledQualInputs = []; // track which input elements already filled (avoid duplicates)
-      for (var ql = 0; ql < qualLabels.length; ql++) {
-        var labelNode = qualLabels[ql];
-        var lt = (labelNode.textContent || '').trim().toLowerCase();
-        if (!lt || lt.length > 40) continue;
-
-        for (var qk in qualFieldMap) {
-          if (filledQualKeys[qk]) continue; // already filled this field
-          if (lt.indexOf(qk) >= 0) {
-            // Found a matching label — look for input in/near it
-            var qContainer = labelNode.parentElement;
-            for (var qlvl = 0; qlvl < 4 && qContainer; qlvl++) {
-              var qInput = qContainer.querySelector('input:not([type=hidden]):not([type=checkbox])');
-              if (qInput && qInput.offsetHeight > 0 && filledQualInputs.indexOf(qInput) < 0) {
-                var qSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                qInput.focus();
-                if (qSetter) qSetter.call(qInput, qualFieldMap[qk]);
-                qInput.dispatchEvent(new Event('input', {bubbles: true}));
-                qInput.dispatchEvent(new Event('change', {bubbles: true}));
-                qInput.dispatchEvent(new Event('blur', {bubbles: true}));
-                diag.fills.push('QUAL_' + qk + ': ' + qualFieldMap[qk]);
-                filledQual++;
-                filledQualKeys[qk] = true;
-                filledQualInputs.push(qInput);
-                break;
-              }
-              qContainer = qContainer.parentElement;
-            }
-            break; // move to next label
-          }
-        }
-      }
-      diag.steps.push('qual_fields_filled: ' + filledQual);
-
-      // Also try the standard findFieldInput approach as fallback
-      var qualFields = ['Mo. Rental Income', 'Monthly Rental Income', 'Gross Rental Income',
-        'Income', 'Monthly Income', 'Property Expenses', 'Liabilities',
-        'Monthly Liabilities', 'Reserves', '# of Financed Properties',
-        'Number of Financed Properties', 'Financed Properties', 'Household Size'];
-      for (var qi = 0; qi < qualFields.length; qi++) {
-        if (fieldMap[qualFields[qi]]) {
-          await setNumeric(qualFields[qi], fieldMap[qualFields[qi]]);
-        }
-      }
-      await sleep(500);
-
-      // Click "Get Qualified Price" button
+      // 1. Find the "Get Qualified Price" button and its containing section
       var qualBtn = null;
       var allBtns2 = document.querySelectorAll('button');
       for (var qbi = 0; qbi < allBtns2.length; qbi++) {
@@ -570,6 +510,82 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
           qualBtn = allBtns2[qbi]; break;
         }
       }
+
+      // 2. Scope the search: walk up from qualBtn to find a container that has the sub-form inputs
+      var qualSection = null;
+      if (qualBtn) {
+        var qp = qualBtn.parentElement;
+        for (var qwalk = 0; qwalk < 6 && qp; qwalk++) {
+          var qInputs = qp.querySelectorAll('input:not([type=hidden]):not([type=checkbox])');
+          // The qualified price section should have ~5 inputs (rental, expenses, liabilities, reserves, financed)
+          if (qInputs.length >= 3 && qInputs.length <= 15) {
+            qualSection = qp;
+            break;
+          }
+          qp = qp.parentElement;
+        }
+      }
+
+      var filledQual = 0;
+      if (qualSection) {
+        // 3. Find inputs ONLY within the qualified price section
+        var qualFieldValues = [
+          { keywords: ['rental', 'rent'], value: fieldMap['Mo. Rental Income'] || '5000' },
+          { keywords: ['property exp', 'prop exp'], value: fieldMap['Property Expenses'] || '500' },
+          { keywords: ['liabilit'], value: fieldMap['Liabilities'] || '2000' },
+          { keywords: ['reserve'], value: fieldMap['Reserves'] || '12' },
+          { keywords: ['financed', '# of fin'], value: fieldMap['# of Financed Properties'] || '1' },
+        ];
+
+        // Walk labels/text ONLY within qualSection
+        var qLabels = qualSection.querySelectorAll('label, span, div');
+        var filledQualInputs = [];
+        for (var qfi = 0; qfi < qualFieldValues.length; qfi++) {
+          var qfv = qualFieldValues[qfi];
+          var matched = false;
+          for (var ql = 0; ql < qLabels.length && !matched; ql++) {
+            var lt = (qLabels[ql].textContent || '').trim().toLowerCase();
+            if (!lt || lt.length > 40) continue;
+            for (var kwi = 0; kwi < qfv.keywords.length; kwi++) {
+              if (lt.indexOf(qfv.keywords[kwi]) < 0) continue;
+              // Found label — find nearest input within same nex-app-field or parent
+              var qContainer = qLabels[ql].parentElement;
+              for (var qlvl = 0; qlvl < 4 && qContainer; qlvl++) {
+                var qInput = qContainer.querySelector('input:not([type=hidden]):not([type=checkbox])');
+                if (qInput && qInput.offsetHeight > 0 && filledQualInputs.indexOf(qInput) < 0) {
+                  var qSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                  qInput.focus();
+                  if (qSetter) qSetter.call(qInput, qfv.value);
+                  qInput.dispatchEvent(new Event('input', {bubbles: true}));
+                  qInput.dispatchEvent(new Event('change', {bubbles: true}));
+                  qInput.dispatchEvent(new Event('blur', {bubbles: true}));
+                  diag.fills.push('QUAL_' + qfv.keywords[0] + ': ' + qfv.value);
+                  filledQual++;
+                  filledQualInputs.push(qInput);
+                  matched = true;
+                  break;
+                }
+                qContainer = qContainer.parentElement;
+              }
+              break;
+            }
+          }
+        }
+        diag.steps.push('qual_fields_filled: ' + filledQual + ', section_inputs: ' + qualSection.querySelectorAll('input:not([type=hidden])').length);
+      } else {
+        diag.steps.push('qual_section_not_found');
+        // Fallback: try standard findFieldInput
+        var qualFields = ['Mo. Rental Income', 'Property Expenses', 'Liabilities',
+          'Reserves', '# of Financed Properties'];
+        for (var qi = 0; qi < qualFields.length; qi++) {
+          if (fieldMap[qualFields[qi]]) {
+            await setNumeric(qualFields[qi], fieldMap[qualFields[qi]]);
+          }
+        }
+      }
+      await sleep(500);
+
+      // 4. Click "Get Qualified Price"
       if (qualBtn) {
         qualBtn.click();
         diag.steps.push('clicked_get_qualified_price');
@@ -618,8 +634,9 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     }
     // Check for any new content after Get Price (investor names, rate numbers)
     // Only trust actual table elements — rate text like "31.997 %" can false-positive from form fields
-    // Look for actual rate patterns (e.g. "7.250%" or "6.875%") — NOT form field values
-    var rateTextFound = body.match(/[5-9]\.\d{3}\s*%/) || body.indexOf('Investor') >= 0;
+    // Look for actual rate patterns (e.g. "7.250%" or "6.875%") — NOT form labels
+    // "Investor" appears as "First Time Investor" label — don't match that
+    var rateTextFound = body.match(/[5-9]\.\d{3}\s*%/) || body.indexOf('Eligible Products') >= 0;
     if (rateTextFound && attempt < 6) {
       diag.steps.push('rate_text_hint_at: ' + ((attempt+1)*1.5) + 's, waiting_for_table');
       continue; // keep waiting for actual table
