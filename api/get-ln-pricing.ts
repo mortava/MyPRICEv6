@@ -51,7 +51,8 @@ function mapFormToLN(body: any): Record<string, string> {
   return {
     'Loan Type': loanTypeMap[body.loanType] || 'First Lien',
     'Purpose': purposeMap[body.loanPurpose] || 'Purchase',
-    'Occupancy': occupancyMap[body.occupancyType] || 'Investment',
+    // DSCR forces Investment occupancy — DSCR programs are investment-only on LoanNex
+    'Occupancy': isDSCR ? 'Investment' : (occupancyMap[body.occupancyType] || 'Investment'),
     'Property Type': propertyMap[body.propertyType] || 'SFR',
     'Income Doc': docMap[body.documentationType] || 'DSCR',
     'Citizenship': citizenMap[body.citizenship] || 'US Citizen',
@@ -511,20 +512,23 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
         '# of financed': fieldMap['# of Financed Properties'] || '1',
       };
 
-      // Walk all text nodes and try to fill any nearby input
+      // Walk text nodes and fill each qualified price field ONCE
       var filledQual = 0;
+      var filledQualKeys = {};  // track which keywords already matched
+      var filledQualInputs = []; // track which input elements already filled (avoid duplicates)
       for (var ql = 0; ql < qualLabels.length; ql++) {
         var labelNode = qualLabels[ql];
         var lt = (labelNode.textContent || '').trim().toLowerCase();
         if (!lt || lt.length > 40) continue;
 
         for (var qk in qualFieldMap) {
+          if (filledQualKeys[qk]) continue; // already filled this field
           if (lt.indexOf(qk) >= 0) {
             // Found a matching label — look for input in/near it
             var qContainer = labelNode.parentElement;
             for (var qlvl = 0; qlvl < 4 && qContainer; qlvl++) {
               var qInput = qContainer.querySelector('input:not([type=hidden]):not([type=checkbox])');
-              if (qInput && qInput.offsetHeight > 0) {
+              if (qInput && qInput.offsetHeight > 0 && filledQualInputs.indexOf(qInput) < 0) {
                 var qSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                 qInput.focus();
                 if (qSetter) qSetter.call(qInput, qualFieldMap[qk]);
@@ -533,6 +537,8 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
                 qInput.dispatchEvent(new Event('blur', {bubbles: true}));
                 diag.fills.push('QUAL_' + qk + ': ' + qualFieldMap[qk]);
                 filledQual++;
+                filledQualKeys[qk] = true;
+                filledQualInputs.push(qInput);
                 break;
               }
               qContainer = qContainer.parentElement;
@@ -612,7 +618,8 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     }
     // Check for any new content after Get Price (investor names, rate numbers)
     // Only trust actual table elements — rate text like "31.997 %" can false-positive from form fields
-    var rateTextFound = body.match(/\d+\.\d{3}%/) || body.indexOf('Investor') >= 0;
+    // Look for actual rate patterns (e.g. "7.250%" or "6.875%") — NOT form field values
+    var rateTextFound = body.match(/[5-9]\.\d{3}\s*%/) || body.indexOf('Investor') >= 0;
     if (rateTextFound && attempt < 6) {
       diag.steps.push('rate_text_hint_at: ' + ((attempt+1)*1.5) + 's, waiting_for_table');
       continue; // keep waiting for actual table
