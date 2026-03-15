@@ -36,9 +36,10 @@ function mapFormToLN(body: any): Record<string, string> {
   // Prefer numeric dscrValue; fall back to extracting from dscrRatio range string
   const dscrNum = body.dscrValue || (body.dscrRatio ? parseFloat(String(body.dscrRatio).replace(/[><=]/g, '').split('-')[0]) : 1.0)
   const dscrVal = isDSCR ? String(dscrNum || '1.0') : ''
-  const rentalVal = isDSCR ? String(body.grossRent || body.grossRentalIncome || '5000') : ''
+  // Always provide rental income default — LN qualified price form may show Mo. Rental Income for any scenario
+  const rentalVal = String(body.grossRent || body.grossRentalIncome || '5000')
   const ppVal = isInvestment ? '5 Year' : 'No Penalty'
-  const finProps = isInvestment ? '1' : ''
+  const finProps = isInvestment ? '1' : '1'
 
   // Income qualification fields — LN may show "Get Qualified Price" for any scenario
   // Always provide defaults so the qualified price form can be filled if it appears
@@ -494,7 +495,55 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     if (!qualifiedPriceHandled && bodyText.indexOf('Get Qualified Price') >= 0) {
       diag.steps.push('qualified_price_form_at: ' + ((attempt+1)*1.5) + 's');
 
-      // Fill income qualification fields that appeared after Get Price
+      // Fill qualified price sub-form fields
+      // Strategy: find ALL visible input fields between "Get Price" and "Get Qualified Price" buttons
+      // and match them by their preceding label text
+      await sleep(500); // let Angular render the qualified price form
+
+      // Build a map of visible labels → next input in the qualified price section
+      var qualLabels = document.querySelectorAll('label, span, div');
+      var qualFieldMap = {
+        'rental': fieldMap['Mo. Rental Income'] || '5000',
+        'property exp': fieldMap['Property Expenses'] || '500',
+        'liabilit': fieldMap['Liabilities'] || '2000',
+        'reserve': fieldMap['Reserves'] || '12',
+        'financed prop': fieldMap['# of Financed Properties'] || '1',
+        '# of financed': fieldMap['# of Financed Properties'] || '1',
+      };
+
+      // Walk all text nodes and try to fill any nearby input
+      var filledQual = 0;
+      for (var ql = 0; ql < qualLabels.length; ql++) {
+        var labelNode = qualLabels[ql];
+        var lt = (labelNode.textContent || '').trim().toLowerCase();
+        if (!lt || lt.length > 40) continue;
+
+        for (var qk in qualFieldMap) {
+          if (lt.indexOf(qk) >= 0) {
+            // Found a matching label — look for input in/near it
+            var qContainer = labelNode.parentElement;
+            for (var qlvl = 0; qlvl < 4 && qContainer; qlvl++) {
+              var qInput = qContainer.querySelector('input:not([type=hidden]):not([type=checkbox])');
+              if (qInput && qInput.offsetHeight > 0) {
+                var qSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                qInput.focus();
+                if (qSetter) qSetter.call(qInput, qualFieldMap[qk]);
+                qInput.dispatchEvent(new Event('input', {bubbles: true}));
+                qInput.dispatchEvent(new Event('change', {bubbles: true}));
+                qInput.dispatchEvent(new Event('blur', {bubbles: true}));
+                diag.fills.push('QUAL_' + qk + ': ' + qualFieldMap[qk]);
+                filledQual++;
+                break;
+              }
+              qContainer = qContainer.parentElement;
+            }
+            break; // move to next label
+          }
+        }
+      }
+      diag.steps.push('qual_fields_filled: ' + filledQual);
+
+      // Also try the standard findFieldInput approach as fallback
       var qualFields = ['Mo. Rental Income', 'Monthly Rental Income', 'Gross Rental Income',
         'Income', 'Monthly Income', 'Property Expenses', 'Liabilities',
         'Monthly Liabilities', 'Reserves', '# of Financed Properties',
@@ -524,16 +573,31 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       }
       qualifiedPriceHandled = true;
 
-      // Capture income field values for diagnostics
+      // Capture income field values AND their labels for diagnostics
       var incomeInputs = document.querySelectorAll('input[type=text], input:not([type])');
       var incVals = [];
+      var incLabels = [];
       for (var ivi = 0; ivi < incomeInputs.length; ivi++) {
         var iv = incomeInputs[ivi];
+        if (iv.offsetHeight > 0) {
+          var ivLabel = '';
+          var ivParent = iv.parentElement;
+          for (var ivl = 0; ivl < 4 && ivParent; ivl++) {
+            var ivLbl = ivParent.querySelector('label, span');
+            if (ivLbl && (ivLbl.textContent || '').trim().length > 0 && (ivLbl.textContent || '').trim().length < 30) {
+              ivLabel = (ivLbl.textContent || '').trim();
+              break;
+            }
+            ivParent = ivParent.parentElement;
+          }
+          incLabels.push(ivLabel + '=' + (iv.value || '(empty)'));
+        }
         if (iv.value && iv.value !== '' && parseFloat(iv.value.replace(/[,$]/g, '')) > 0) {
           incVals.push(iv.value);
         }
       }
       diag.incomeFieldValues = incVals.slice(0, 15);
+      diag.qualFieldLabels = incLabels.slice(0, 20);
       continue; // keep waiting for results table
     }
 
