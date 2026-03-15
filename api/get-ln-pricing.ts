@@ -37,7 +37,7 @@ function mapFormToLN(body: any): Record<string, string> {
   const dscrNum = body.dscrValue || (body.dscrRatio ? parseFloat(String(body.dscrRatio).replace(/[><=]/g, '').split('-')[0]) : 1.0)
   const dscrVal = isDSCR ? String(dscrNum || '1.0') : ''
   const rentalVal = isDSCR ? String(body.grossRent || body.grossRentalIncome || '5000') : ''
-  const ppVal = isInvestment ? '5 Year' : 'None'
+  const ppVal = isInvestment ? '5 Year' : 'No Penalty'
   const finProps = isInvestment ? '1' : ''
 
   // Income qualification fields — LN may show "Get Qualified Price" for any scenario
@@ -430,8 +430,10 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
 
   // Fill numeric fields (includes DSCR-specific fields discovered after Income Doc selection)
   var numerics = ['Appraised Value', 'Purchase Price', 'First Lien Amount', 'FICO', 'DTI',
-    'Months Reserves', 'DSCR', 'Mo. Rental Income', '# of Financed Properties',
-    'Income', 'Monthly Income', 'Property Expenses', 'Liabilities', 'Monthly Liabilities', 'Household Size'];
+    'Months Reserves', 'DSCR', 'DSCR Ratio', 'DSCR %',
+    'Mo. Rental Income', 'Monthly Rental Income', 'Gross Rental Income',
+    '# of Financed Properties', 'Number of Financed Properties', 'Financed Properties',
+    'Income', 'Monthly Income', 'Property Expenses', 'Liabilities', 'Monthly Liabilities', 'Reserves', 'Household Size'];
   for (var ni = 0; ni < numerics.length; ni++) {
     var nkey = numerics[ni];
     if (fieldMap[nkey]) {
@@ -493,8 +495,10 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       diag.steps.push('qualified_price_form_at: ' + ((attempt+1)*1.5) + 's');
 
       // Fill income qualification fields that appeared after Get Price
-      var qualFields = ['Income', 'Monthly Income', 'Property Expenses', 'Liabilities',
-        'Monthly Liabilities', 'Reserves', 'Household Size'];
+      var qualFields = ['Mo. Rental Income', 'Monthly Rental Income', 'Gross Rental Income',
+        'Income', 'Monthly Income', 'Property Expenses', 'Liabilities',
+        'Monthly Liabilities', 'Reserves', '# of Financed Properties',
+        'Number of Financed Properties', 'Financed Properties', 'Household Size'];
       for (var qi = 0; qi < qualFields.length; qi++) {
         if (fieldMap[qualFields[qi]]) {
           await setNumeric(qualFields[qi], fieldMap[qualFields[qi]]);
