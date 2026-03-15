@@ -675,41 +675,100 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
 
   if (!resultsFound) {
     diag.steps.push('no_results_table');
-    // Capture page text AFTER "Get Price" to see what appeared
-    var fullText = (document.body.innerText || '');
-    var gpIdx = fullText.indexOf('Get Price');
-    diag.afterGetPrice = gpIdx >= 0 ? fullText.substring(gpIdx, gpIdx + 800) : fullText.substring(0, 1500);
-    // Count table elements and capture row content for diagnostics
-    var allTbls = document.querySelectorAll('table, p-table, .p-datatable');
-    var tblInfo = [];
-    for (var tbi = 0; tbi < allTbls.length; tbi++) {
-      var tblRows = allTbls[tbi].querySelectorAll('tr');
-      var rowTexts = [];
-      for (var tri = 0; tri < tblRows.length && tri < 5; tri++) {
-        rowTexts.push((tblRows[tri].textContent || '').trim().substring(0, 200));
+
+    // FALLBACK: Try alternative scraping strategies before giving up
+    var rates = [];
+
+    // Strategy 1: Look for PrimeNG data grid rows (rendered as divs, not tables)
+    var gridRows = document.querySelectorAll('[class*=datatable] [class*=row], [class*=p-datatable] tbody tr, .p-element tr, [role=row]');
+    if (gridRows.length > 1) {
+      diag.steps.push('found_grid_rows: ' + gridRows.length);
+      for (var gri = 0; gri < gridRows.length && gri < 50; gri++) {
+        var cells = gridRows[gri].querySelectorAll('td, [role=cell], [class*=cell]');
+        if (cells.length < 3) continue;
+        var cellTexts = [];
+        for (var gci = 0; gci < cells.length; gci++) {
+          cellTexts.push((cells[gci].textContent || '').trim());
+        }
+        rates.push({ cells: cellTexts, raw: (gridRows[gri].textContent || '').trim().substring(0, 300) });
       }
-      tblInfo.push({ tag: allTbls[tbi].tagName, rows: tblRows.length, content: rowTexts });
-    }
-    diag.tableElements = tblInfo;
-
-    // Capture all visible text around "Eligible Products" for context
-    var epIdx = fullText.indexOf('Eligible Products');
-    if (epIdx >= 0) {
-      diag.eligibleProductsContext = fullText.substring(epIdx, epIdx + 600);
     }
 
-    // Check if "Choose a product" is actually the only row content (true empty state)
-    var chooseText = fullText.indexOf('Choose a product to see pricing');
-    diag.hasChooseProductText = chooseText >= 0;
+    // Strategy 2: Scrape rate data from page text using regex patterns
+    if (rates.length === 0) {
+      var fullText = (document.body.innerText || '');
 
-    // Check for "View Ineligible Products" — if present, there ARE results but none eligible
-    diag.hasIneligibleLink = fullText.indexOf('View Ineligible') >= 0;
-    return JSON.stringify({ success: true, rates: [], diag: diag });
+      // Look for rate/price patterns like "7.250% 30 Days 101.250 $750"
+      var rateLines = fullText.match(/[5-9]\.\d{3}\s*%[^\n]{0,200}/g);
+      if (rateLines && rateLines.length > 0) {
+        diag.steps.push('text_scrape_lines: ' + rateLines.length);
+        for (var rli = 0; rli < rateLines.length && rli < 50; rli++) {
+          var line = rateLines[rli].trim();
+          var rateM = line.match(/([5-9]\.\d{3})\s*%/);
+          var priceM = line.match(/(1\d{2}\.\d{3})/);
+          var lockM = line.match(/(\d+)\s*Days/i);
+          var pmtM = line.match(/\$([\d,]+\.\d{2})/);
+          if (rateM) {
+            rates.push({
+              'Rate': (rateM[1] || '') + '%' + (lockM ? ' ' + lockM[1] + ' Days' : ''),
+              'Price': priceM ? priceM[1] : '',
+              'Payment': pmtM ? '$' + pmtM[1] : '',
+              'raw': line.substring(0, 200),
+            });
+          }
+        }
+      }
+
+      // Capture diagnostic context
+      var gpIdx = fullText.indexOf('Get Price');
+      diag.afterGetPrice = gpIdx >= 0 ? fullText.substring(gpIdx, gpIdx + 1200) : fullText.substring(0, 1500);
+
+      var epIdx = fullText.indexOf('Eligible Products');
+      if (epIdx >= 0) diag.eligibleProductsContext = fullText.substring(epIdx, epIdx + 800);
+
+      // Capture ALL text after "Get Qualified Price" — this is where rate results appear
+      var gqpIdx = fullText.indexOf('Get Qualified Price');
+      if (gqpIdx >= 0) {
+        diag.afterQualifiedPrice = fullText.substring(gqpIdx, gqpIdx + 2000);
+      }
+
+      var allTbls = document.querySelectorAll('table, p-table, .p-datatable, [class*=datatable]');
+      var tblInfo = [];
+      for (var tbi = 0; tbi < allTbls.length; tbi++) {
+        var tblRows = allTbls[tbi].querySelectorAll('tr, [role=row]');
+        var rowTexts = [];
+        for (var tri = 0; tri < tblRows.length && tri < 5; tri++) {
+          rowTexts.push((tblRows[tri].textContent || '').trim().substring(0, 200));
+        }
+        tblInfo.push({ tag: allTbls[tbi].tagName, classes: (allTbls[tbi].className || '').substring(0, 100), rows: tblRows.length, content: rowTexts });
+      }
+      diag.tableElements = tblInfo;
+
+      // Also capture ALL DOM elements that might be data containers
+      var dataContainers = document.querySelectorAll('[class*=product], [class*=rate], [class*=pricing], [class*=result]');
+      var containerInfo = [];
+      for (var dci = 0; dci < dataContainers.length && dci < 10; dci++) {
+        containerInfo.push({
+          tag: dataContainers[dci].tagName,
+          classes: (dataContainers[dci].className || '').substring(0, 100),
+          text: (dataContainers[dci].textContent || '').trim().substring(0, 200),
+        });
+      }
+      diag.dataContainers = containerInfo;
+
+      diag.hasChooseProductText = fullText.indexOf('Choose a product to see pricing') >= 0;
+      diag.hasIneligibleLink = fullText.indexOf('View Ineligible') >= 0;
+    }
+
+    if (rates.length > 0) {
+      diag.steps.push('fallback_scraped: ' + rates.length + ' rows');
+    }
+    return JSON.stringify({ success: true, rates: rates, diag: diag });
   }
 
   await sleep(1000); // settle — allow table to fully render
 
-  // Scrape the results table
+  // Scrape the results table (standard HTML table)
   var rates = [];
   var tables = document.querySelectorAll('table, p-table, .p-datatable');
   for (var ti2 = 0; ti2 < tables.length; ti2++) {
@@ -898,12 +957,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }).filter((r: any) => r.rate > 0)
 
+    // Filter to 99.000 - 103.000 price range
+    const filteredRates = rateOptions.filter((r: any) => r.price >= 99.0 && r.price <= 103.0)
+
     return res.json({
       success: true,
       data: {
-        rateOptions,
-        totalRates: rateOptions.length,
+        rateOptions: filteredRates,
+        totalRates: filteredRates.length,
+        unfilteredTotal: rateOptions.length,
         rawRows: rates.length,
+        priceRange: '99.000 - 103.000',
         diag: resultData.diag,
       },
     })
