@@ -750,17 +750,17 @@ export default function App() {
   const targetPricing: TargetPricingOption | null = result ? getTargetPricing() : null
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="bg-white relative" style={{ borderBottom: '1px solid rgba(39, 39, 42, 0.15)' }}>
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="bg-white relative z-40 no-print" style={{ borderBottom: '1px solid rgba(39, 39, 42, 0.15)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="flex items-center justify-between" style={{ padding: '16px 0' }}>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-[10px] bg-[#FAFAFA]">
+          <div className="flex items-center justify-between h-[56px] sm:h-[60px]">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center justify-center w-8 h-8 rounded-[10px] bg-[#FAFAFA] shrink-0">
                 <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-                  <text x="24" y="36" fontSize="36" fontWeight="800" fill="#000" fontFamily='-apple-system, BlinkMacSystemFont, "Inter", sans-serif' textAnchor="middle" letterSpacing="-0.04em">P</text>
+                  <text x="24" y="36" fontSize="36" fontWeight="800" fill="#000" fontFamily="Montserrat, sans-serif" textAnchor="middle" letterSpacing="-0.04em">P</text>
                 </svg>
               </div>
-              <span className="text-[15px] font-semibold text-[#71717A]" style={{ letterSpacing: '-0.02em' }}>OpenBroker Labs · OpenPrice</span>
+              <span className="text-[14px] sm:text-[15px] font-semibold text-[#71717A] truncate" style={{ letterSpacing: '-0.02em' }}>OpenBroker Labs <span className="hidden sm:inline">·</span> <span className="hidden sm:inline">OpenPrice</span></span>
             </div>
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-6">
@@ -770,51 +770,52 @@ export default function App() {
               <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="text-[13px] text-[#A1A1AA] hover:text-black transition-colors duration-150">AUS</a>
               <Button variant="outline" size="sm">Sign Out</Button>
             </nav>
-            {/* Mobile hamburger */}
+            {/* Mobile hamburger - 44px touch target */}
             <button
               type="button"
-              className="md:hidden p-2 text-black rounded-[8px] hover:bg-[#F4F4F5] transition-all duration-150"
+              className="md:hidden flex items-center justify-center w-11 h-11 text-black rounded-[8px] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] transition-all duration-150"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
         {/* Mobile dropdown menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white absolute left-0 right-0 z-50" style={{ borderTop: '1px solid rgba(39, 39, 42, 0.15)' }}>
+          <div className="md:hidden bg-white absolute left-0 right-0 z-50 shadow-lg" style={{ borderTop: '1px solid rgba(39, 39, 42, 0.15)' }}>
             <div className="px-4 py-3 space-y-1">
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>Deal Desk</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>Pipeline</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>AVM</a>
-              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>AUS</a>
-              <div style={{ borderTop: '1px solid rgba(39, 39, 42, 0.1)' }} className="pt-2 mt-2">
-                <Button variant="outline" size="sm" className="w-full" onClick={() => setMobileMenuOpen(false)}>Sign Out</Button>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="flex items-center h-11 px-3 text-[14px] text-[#71717A] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>Deal Desk</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="flex items-center h-11 px-3 text-[14px] text-[#71717A] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>Pipeline</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="flex items-center h-11 px-3 text-[14px] text-[#71717A] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>AVM</a>
+              <a href="https://app.defywholesale.com" target="_blank" rel="noopener noreferrer" className="flex items-center h-11 px-3 text-[14px] text-[#71717A] hover:text-black hover:bg-[#FAFAFA] rounded-[8px] transition-all duration-150" onClick={() => setMobileMenuOpen(false)}>AUS</a>
+              <div style={{ borderTop: '1px solid rgba(39, 39, 42, 0.1)' }} className="pt-3 mt-2">
+                <Button variant="outline" size="sm" className="w-full h-11" onClick={() => setMobileMenuOpen(false)}>Sign Out</Button>
               </div>
             </div>
           </div>
         )}
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 flex-1">
+        <div className="space-y-6 sm:space-y-8">
           <div>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
-                  <Calculator className="w-5 h-5 text-black" />
-                  <span className="text-[22px] font-bold text-black" style={{ letterSpacing: '-0.03em' }}>Loan Details</span>
+                  <Calculator className="w-5 h-5 text-black shrink-0" />
+                  <span className="text-[20px] sm:text-[22px] font-extrabold text-black" style={{ letterSpacing: '-0.03em' }}>Loan Details</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
 
                   {/* LOAN INFORMATION SECTION */}
-                  <div className="pb-4">
-                    <h3 className="text-[11px] font-semibold text-[#71717A] mb-4 uppercase tracking-[0.08em]">Loan Information</h3>
+                  <div className="pb-3 sm:pb-4">
+                    <h3 className="text-[11px] font-bold text-[#71717A] mb-3 sm:mb-4 uppercase tracking-[0.1em]">Loan Information</h3>
                     {/* LINE 1: Lien Position, Lock Period, Loan Purpose, Term */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="lienPosition">Lien Position</Label>
                         <Select name="lienPosition" value={formData.lienPosition} onValueChange={(v) => handleInputChange('lienPosition', v)}>
@@ -865,7 +866,7 @@ export default function App() {
                     </div>
 
                     {/* LINE 2: Appraised Value/Sales Price, Loan Amount, LTV, CLTV (2nd/HELOC only), Amortization */}
-                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${formData.lienPosition !== '1st' ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4 mt-4`}>
+                    <div className={`grid grid-cols-2 sm:grid-cols-2 ${formData.lienPosition !== '1st' ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3 sm:gap-4 mt-3 sm:mt-4`}>
                       <div className="space-y-2">
                         <Label htmlFor="propertyValue" className={hasError('propertyValue') ? 'text-[#EF4444]' : ''}>Value/Sales Price *</Label>
                         <Input
@@ -915,7 +916,7 @@ export default function App() {
                       {formData.lienPosition !== '1st' && (
                         <div className="space-y-2">
                           <Label htmlFor="cltv">CLTV</Label>
-                          <div id="cltv" className="h-10 px-3 py-2 bg-gray-100 border rounded-md text-sm font-medium">
+                          <div id="cltv" className="h-11 px-3 py-2 bg-gray-100 border rounded-[8px] text-sm font-medium flex items-center">
                             Enter 2nd Lien
                           </div>
                         </div>
@@ -937,7 +938,7 @@ export default function App() {
                     </div>
 
                     {/* LINE 3: Payment, Impound Type + Cashout if applicable */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mt-3 sm:mt-4">
                       <div className="space-y-2">
                         <Label htmlFor="paymentType">Payment</Label>
                         <Select name="paymentType" value={formData.paymentType} onValueChange={(v) => handleInputChange('paymentType', v)}>
@@ -974,10 +975,10 @@ export default function App() {
                   </div>
 
                   {/* PROPERTY DETAILS SECTION - Merged Location and Property Details */}
-                  <div className="pb-4">
-                    <h3 className="text-[11px] font-semibold text-[#71717A] mb-4 uppercase tracking-[0.08em]">Property Details</h3>
+                  <div className="pb-3 sm:pb-4 section-divider">
+                    <h3 className="text-[11px] font-bold text-[#71717A] mb-3 sm:mb-4 uppercase tracking-[0.1em]">Property Details</h3>
                     {/* LINE 1: Location fields */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="propertyZip" className={hasError('propertyZip') ? 'text-[#EF4444]' : ''}>
                           ZIP Code * {zipLoading && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
@@ -1012,7 +1013,7 @@ export default function App() {
                       </div>
                     </div>
                     {/* LINE 2: Property type fields */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mt-3 sm:mt-4">
                       <div className="space-y-2">
                         <Label htmlFor="occupancyType" className={hasError('occupancyType') ? 'text-[#EF4444]' : ''}>Property Use *</Label>
                         <Select name="occupancyType" value={formData.occupancyType} onValueChange={(v) => handleInputChange('occupancyType', v)}>
@@ -1054,47 +1055,44 @@ export default function App() {
                       </div>
                     </div>
                     {/* LINE 3: Property checkboxes */}
-                    <div className="flex flex-wrap gap-6 mt-4">
-                      <label htmlFor="isRuralProperty" className="flex items-center gap-2 cursor-pointer">
+                    <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 sm:mt-4">
+                      <label htmlFor="isRuralProperty" className="premium-checkbox">
                         <input
                           type="checkbox"
                           id="isRuralProperty"
                           name="isRuralProperty"
                           checked={formData.isRuralProperty}
                           onChange={(e) => handleInputChange('isRuralProperty', e.target.checked)}
-                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
-                        <span className="text-sm">Rural Property</span>
+                        <span>Rural Property</span>
                       </label>
-                      <label htmlFor="isNonWarrantableProject" className="flex items-center gap-2 cursor-pointer">
+                      <label htmlFor="isNonWarrantableProject" className="premium-checkbox">
                         <input
                           type="checkbox"
                           id="isNonWarrantableProject"
                           name="isNonWarrantableProject"
                           checked={formData.isNonWarrantableProject}
                           onChange={(e) => handleInputChange('isNonWarrantableProject', e.target.checked)}
-                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
-                        <span className="text-sm">Non-Warrantable Project?</span>
+                        <span>Non-Warrantable Project?</span>
                       </label>
-                      <label htmlFor="isMixedUsePML" className="flex items-center gap-2 cursor-pointer">
+                      <label htmlFor="isMixedUsePML" className="premium-checkbox">
                         <input
                           type="checkbox"
                           id="isMixedUsePML"
                           name="isMixedUsePML"
                           checked={formData.isMixedUsePML}
                           onChange={(e) => handleInputChange('isMixedUsePML', e.target.checked)}
-                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
-                        <span className="text-sm">Mixed Use</span>
+                        <span>Mixed Use</span>
                       </label>
                     </div>
                   </div>
 
                   {/* BORROWER DETAILS SECTION */}
-                  <div className="pb-4">
-                    <h3 className="text-[11px] font-semibold text-[#71717A] mb-4 uppercase tracking-[0.08em]">Borrower Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="pb-3 sm:pb-4 section-divider">
+                    <h3 className="text-[11px] font-bold text-[#71717A] mb-3 sm:mb-4 uppercase tracking-[0.1em]">Borrower Details</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="creditScore" className={hasError('creditScore') ? 'text-[#EF4444]' : ''}>Estimated Credit Score *</Label>
                         <Input
@@ -1150,37 +1148,35 @@ export default function App() {
                         </Select>
                       </div>
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-6">
-                      <label htmlFor="isSelfEmployed" className="flex items-center gap-2 cursor-pointer">
+                    <div className="mt-3 sm:mt-4 flex flex-wrap gap-x-6 gap-y-1">
+                      <label htmlFor="isSelfEmployed" className="premium-checkbox">
                         <input
                           type="checkbox"
                           id="isSelfEmployed"
                           name="isSelfEmployed"
                           checked={formData.isSelfEmployed}
                           onChange={(e) => handleInputChange('isSelfEmployed', e.target.checked)}
-                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
-                        <span className="text-sm">Self Employed</span>
+                        <span>Self Employed</span>
                       </label>
-                      <label htmlFor="isFTHB" className="flex items-center gap-2 cursor-pointer">
+                      <label htmlFor="isFTHB" className="premium-checkbox">
                         <input
                           type="checkbox"
                           id="isFTHB"
                           name="isFTHB"
                           checked={formData.isFTHB}
                           onChange={(e) => handleInputChange('isFTHB', e.target.checked)}
-                          className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                         />
-                        <span className="text-sm">FTHB (First Time Home Buyer)</span>
+                        <span>FTHB (First Time Home Buyer)</span>
                       </label>
                     </div>
                   </div>
 
                   {/* INVESTOR DETAILS SECTION - Conditional */}
                   {showInvestorDetails && (
-                    <div className="pb-4 bg-[#FAFAFA] -mx-5 px-5 py-4 rounded-[12px]" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
-                      <h3 className="text-[11px] font-semibold text-[#71717A] mb-4 uppercase tracking-[0.08em]">Investor Details</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="pb-3 sm:pb-4 bg-[#FAFAFA] -mx-4 sm:-mx-5 px-4 sm:px-5 py-4 rounded-[12px]" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
+                      <h3 className="text-[11px] font-bold text-[#71717A] mb-3 sm:mb-4 uppercase tracking-[0.1em]">Investor Details</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="prepayPeriod">Prepay Period</Label>
                           <Select name="prepayPeriod" value={formData.prepayPeriod} onValueChange={(v) => handleInputChange('prepayPeriod', v)}>
@@ -1223,7 +1219,7 @@ export default function App() {
                       </div>
                       {/* DSCR Calculation Fields - Only show when Income Doc Type = DSCR */}
                       {formData.documentationType === 'dscr' && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mt-3 sm:mt-4">
                         <div className="space-y-2">
                           <Label htmlFor="presentHousingExpense">Present Housing Expense</Label>
                           <Input
@@ -1259,7 +1255,7 @@ export default function App() {
                               </span>
                             </span>
                           </Label>
-                          <div className="h-10 px-3 py-2 bg-white border rounded-md text-sm font-medium flex items-center justify-between">
+                          <div className="h-11 px-3 py-2 bg-white border rounded-[8px] text-sm font-medium flex items-center justify-between">
                             <span className={`font-mono font-bold ${
                               calculatedDSCR.ratio >= 1.0 ? 'text-black' :
                               calculatedDSCR.ratio >= 0.75 ? 'text-gray-500' :
@@ -1277,8 +1273,8 @@ export default function App() {
                       </div>
                       )}
                       {/* LINE 3: Investor checkboxes */}
-                      <div className="flex flex-wrap gap-6 mt-4">
-                        <label htmlFor="isSeasonalProperty" className="flex items-center gap-2 cursor-pointer">
+                      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 sm:mt-4">
+                        <label htmlFor="isSeasonalProperty" className="premium-checkbox">
                           <input
                             type="checkbox"
                             id="isSeasonalProperty"
@@ -1288,20 +1284,18 @@ export default function App() {
                               handleInputChange('isSeasonalProperty', e.target.checked)
                               handleInputChange('isShortTermRental', e.target.checked)
                             }}
-                            className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                           />
-                          <span className="text-sm">Seasonal Property/Short Term Rental</span>
+                          <span>Seasonal Property/Short Term Rental</span>
                         </label>
-                        <label htmlFor="isCrossCollateralized" className="flex items-center gap-2 cursor-pointer">
+                        <label htmlFor="isCrossCollateralized" className="premium-checkbox">
                           <input
                             type="checkbox"
                             id="isCrossCollateralized"
                             name="isCrossCollateralized"
                             checked={formData.isCrossCollateralized}
                             onChange={(e) => handleInputChange('isCrossCollateralized', e.target.checked)}
-                            className="w-4 h-4 border-gray-300 accent-black focus:ring-black"
                           />
-                          <span className="text-sm">Cross-Collateralized</span>
+                          <span>Cross-Collateralized</span>
                         </label>
                         {/* Prepayment Penalty (None + Has PPP) and Occupancy Rate (100%) are always sent to API but hidden from UI since they cannot be changed */}
                       </div>
@@ -1309,29 +1303,29 @@ export default function App() {
                   )}
 
                   {/* ADDITIONAL DETAILS SECTION - Collapsible */}
-                  <div className="pb-4">
+                  <div className="pb-3 sm:pb-4 section-divider">
                     <button
                       type="button"
                       onClick={() => setShowOtherDetails(!showOtherDetails)}
-                      className="flex items-center gap-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.08em] hover:text-black transition-colors"
+                      className="flex items-center gap-2 text-[11px] font-bold text-[#71717A] uppercase tracking-[0.1em] hover:text-black transition-colors h-11 touch-target"
                     >
                       {showOtherDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       Additional Details
                     </button>
 
                     {showOtherDetails && (
-                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        <label htmlFor="is5PlusUnits" className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" id="is5PlusUnits" name="is5PlusUnits" checked={formData.is5PlusUnits} onChange={(e) => handleInputChange('is5PlusUnits', e.target.checked)} className="w-4 h-4 rounded" />
-                          <span className="text-sm">5+ Units</span>
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1">
+                        <label htmlFor="is5PlusUnits" className="premium-checkbox">
+                          <input type="checkbox" id="is5PlusUnits" name="is5PlusUnits" checked={formData.is5PlusUnits} onChange={(e) => handleInputChange('is5PlusUnits', e.target.checked)} />
+                          <span>5+ Units</span>
                         </label>
-                        <label htmlFor="hasITIN" className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" id="hasITIN" name="hasITIN" checked={formData.hasITIN} onChange={(e) => handleInputChange('hasITIN', e.target.checked)} className="w-4 h-4 rounded" />
-                          <span className="text-sm">Borrower has ITIN</span>
+                        <label htmlFor="hasITIN" className="premium-checkbox">
+                          <input type="checkbox" id="hasITIN" name="hasITIN" checked={formData.hasITIN} onChange={(e) => handleInputChange('hasITIN', e.target.checked)} />
+                          <span>Borrower has ITIN</span>
                         </label>
-                        <label htmlFor="isAVMOrCDA" className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" id="isAVMOrCDA" name="isAVMOrCDA" checked={formData.isAVMOrCDA} onChange={(e) => handleInputChange('isAVMOrCDA', e.target.checked)} className="w-4 h-4 rounded" />
-                          <span className="text-sm">AVM or CDA</span>
+                        <label htmlFor="isAVMOrCDA" className="premium-checkbox">
+                          <input type="checkbox" id="isAVMOrCDA" name="isAVMOrCDA" checked={formData.isAVMOrCDA} onChange={(e) => handleInputChange('isAVMOrCDA', e.target.checked)} />
+                          <span>AVM or CDA</span>
                         </label>
                       </div>
                     )}
@@ -1374,10 +1368,10 @@ export default function App() {
                 <>
                 <Card>
                   <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between flex-wrap gap-4">
-                      <CardTitle className="text-lg flex items-center gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
-                        <span className="text-[22px] font-bold text-black" style={{ letterSpacing: '-0.03em' }}>Pricing Result</span>
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <CardTitle className="text-lg flex items-center gap-2.5">
+                        <CheckCircle2 className="w-5 h-5 text-[#22C55E] shrink-0" />
+                        <span className="text-[20px] sm:text-[22px] font-extrabold text-black" style={{ letterSpacing: '-0.03em' }}>Pricing Result</span>
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         <div className="status-success flex items-center gap-1.5 text-[10px] font-medium uppercase" style={{ letterSpacing: '0.08em', padding: '3px 8px' }}>
@@ -1393,50 +1387,50 @@ export default function App() {
                   </CardHeader>
                   <CardContent>
                     {/* Main Pricing Metrics */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-0 rounded-[12px] overflow-hidden" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
-                      <div className="p-4 text-center" style={{ borderRight: '1px solid rgba(39, 39, 42, 0.12)', borderBottom: '1px solid rgba(39, 39, 42, 0.12)' }}>
-                        <div className="text-[28px] font-bold text-black" style={{ letterSpacing: '-0.04em' }}>
+                    <div className="grid grid-cols-3 md:grid-cols-6 gap-0 rounded-[12px] overflow-hidden" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
+                      <div className="p-3 sm:p-4 text-center" style={{ borderRight: '1px solid rgba(39, 39, 42, 0.12)', borderBottom: '1px solid rgba(39, 39, 42, 0.12)' }}>
+                        <div className="text-[22px] sm:text-[28px] font-extrabold text-black" style={{ letterSpacing: '-0.04em' }}>
                           {targetPricing ? formatPercent(targetPricing.rate) : formatPercent(safeNumber(result.rate))}
                         </div>
-                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">Rate</div>
+                        <div className="text-[10px] sm:text-[11px] text-[#A1A1AA] mt-1.5 sm:mt-2 font-semibold uppercase tracking-[0.06em]">Rate</div>
                       </div>
-                      <div className="p-4 text-center">
-                        <div className="text-[22px] font-bold text-black">
+                      <div className="p-3 sm:p-4 text-center" style={{ borderRight: '1px solid rgba(39, 39, 42, 0.12)', borderBottom: '1px solid rgba(39, 39, 42, 0.12)' }}>
+                        <div className="text-[18px] sm:text-[22px] font-bold text-black">
                           {targetPricing ? targetPricing.price.toFixed(3) : '100.000'}
                         </div>
-                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">Price</div>
+                        <div className="text-[10px] sm:text-[11px] text-[#A1A1AA] mt-1.5 sm:mt-2 font-semibold uppercase tracking-[0.06em]">Price</div>
                       </div>
-                      <div className="p-4 text-center">
-                        <div className="text-[22px] font-bold text-black">
+                      <div className="p-3 sm:p-4 text-center" style={{ borderBottom: '1px solid rgba(39, 39, 42, 0.12)' }}>
+                        <div className="text-[18px] sm:text-[22px] font-bold text-black">
                           {targetPricing ? formatPercent(targetPricing.apr) : formatPercent(safeNumber(result.apr))}
                         </div>
-                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">APR</div>
+                        <div className="text-[10px] sm:text-[11px] text-[#A1A1AA] mt-1.5 sm:mt-2 font-semibold uppercase tracking-[0.06em]">APR</div>
                       </div>
-                      <div className="p-4 text-center">
-                        <div className="text-[22px] font-bold text-black">
+                      <div className="p-3 sm:p-4 text-center" style={{ borderRight: '1px solid rgba(39, 39, 42, 0.12)' }}>
+                        <div className="text-[18px] sm:text-[22px] font-bold text-black">
                           {targetPricing && targetPricing.payment > 0 ? formatCurrency(targetPricing.payment) : formatCurrency(safeNumber(result.monthlyPayment))}
                         </div>
-                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">Payment</div>
+                        <div className="text-[10px] sm:text-[11px] text-[#A1A1AA] mt-1.5 sm:mt-2 font-semibold uppercase tracking-[0.06em]">Payment</div>
                       </div>
-                      <div className="p-4 text-center">
-                        <div className="text-[22px] font-bold text-black">
+                      <div className="p-3 sm:p-4 text-center" style={{ borderRight: '1px solid rgba(39, 39, 42, 0.12)' }}>
+                        <div className="text-[18px] sm:text-[22px] font-bold text-black">
                           {targetPricing ? targetPricing.points.toFixed(3) : safeNumber(result.points).toFixed(3)}
                         </div>
-                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">Points</div>
+                        <div className="text-[10px] sm:text-[11px] text-[#A1A1AA] mt-1.5 sm:mt-2 font-semibold uppercase tracking-[0.06em]">Points</div>
                       </div>
-                      <div className="p-4 text-center">
-                        <div className="text-[22px] font-bold text-black">{safeNumber(result.ltvRatio).toFixed(1)}%</div>
-                        <div className="text-[11px] text-[#A1A1AA] mt-2 font-medium">LTV</div>
+                      <div className="p-3 sm:p-4 text-center">
+                        <div className="text-[18px] sm:text-[22px] font-bold text-black">{safeNumber(result.ltvRatio).toFixed(1)}%</div>
+                        <div className="text-[10px] sm:text-[11px] text-[#A1A1AA] mt-1.5 sm:mt-2 font-semibold uppercase tracking-[0.06em]">LTV</div>
                       </div>
                     </div>
 
                     {/* Pricing Adjustments Table */}
                     {targetPricing && targetPricing.adjustments && targetPricing.adjustments.length > 0 && (
-                      <div className="mt-6">
-                        <div className="text-[11px] font-semibold text-gray-400 mb-3 uppercase tracking-[0.2em]">
+                      <div className="mt-5 sm:mt-6">
+                        <div className="text-[11px] font-bold text-gray-400 mb-3 uppercase tracking-[0.15em]">
                           Pricing Adjustments Applied
                         </div>
-                        <div className="overflow-hidden rounded-[12px]" style={{ border: '1px solid rgba(39, 39, 42, 0.12)' }}>
+                        <div className="rate-table-scroll rounded-[12px]" style={{ border: '1px solid rgba(39, 39, 42, 0.12)' }}>
                           <table className="w-full text-sm">
                             <thead>
                               <tr style={{ borderBottom: '1px solid rgba(39, 39, 42, 0.15)' }}>
@@ -1471,9 +1465,9 @@ export default function App() {
 
                 {/* PROGRAMS - HORIZONTAL CARDS */}
                 {Array.isArray(result.programs) && result.programs.length > 0 ? (
-                  <Card className="mt-6 border border-gray-200">
+                  <Card className="mt-5 sm:mt-6 border border-gray-200">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-[11px] font-semibold text-[#71717A] uppercase tracking-[0.08em]">Available Programs ({result.programs.filter(p => p && Array.isArray(p.rateOptions) && filterRateOptionsByPrice(p.rateOptions).length > 0).length})</CardTitle>
+                      <CardTitle className="text-[11px] font-bold text-[#71717A] uppercase tracking-[0.1em]">Available Programs ({result.programs.filter(p => p && Array.isArray(p.rateOptions) && filterRateOptionsByPrice(p.rateOptions).length > 0).length})</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {result.programs.map((program, idx) => {
@@ -1496,42 +1490,50 @@ export default function App() {
                         const bestPayment = bestRate ? safeNumber(bestRate.payment) : 0
 
                         return (
-                          <div key={idx} className="border border-gray-200 overflow-hidden bg-white">
+                          <div key={idx} className="border border-gray-200 overflow-hidden bg-white rounded-[8px]">
                             {/* Horizontal Card Header */}
                             <button
                               type="button"
                               onClick={() => setExpandedProgram(expandedProgram === programName ? null : programName)}
-                              className="w-full px-4 py-3 hover:bg-gray-50 transition-colors"
+                              className="w-full px-3 sm:px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-target"
                             >
                               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                 {/* Program Name */}
-                                <div className="flex-1 text-left">
-                                  <div className="font-medium text-sm text-gray-900">{programName}</div>
-                                  <div className="text-xs text-gray-500">{filteredRateOptions.length} rate options</div>
+                                <div className="flex items-center justify-between sm:block flex-1 text-left min-w-0">
+                                  <div className="font-semibold text-[13px] sm:text-sm text-gray-900 truncate">{programName}</div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-gray-500">{filteredRateOptions.length} rates</span>
+                                    <span className="sm:hidden">
+                                      {expandedProgram === programName ?
+                                        <ChevronUp className="w-4 h-4 text-gray-400" /> :
+                                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                                      }
+                                    </span>
+                                  </div>
                                 </div>
 
                                 {/* Key Metrics - Horizontal on desktop, grid on mobile */}
-                                <div className="grid grid-cols-4 sm:flex sm:items-center gap-3 sm:gap-6 text-sm w-full sm:w-auto mt-2 sm:mt-0">
+                                <div className="grid grid-cols-4 sm:flex sm:items-center gap-2 sm:gap-6 text-sm w-full sm:w-auto">
                                   <div className="text-center">
-                                    <div className="text-black font-bold text-base sm:text-lg font-mono">{bestRate ? safeNumber(bestRate.rate).toFixed(3) : '-'}%</div>
-                                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">Rate</div>
+                                    <div className="text-black font-bold text-[15px] sm:text-lg font-mono">{bestRate ? safeNumber(bestRate.rate).toFixed(3) : '-'}%</div>
+                                    <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Rate</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="font-semibold text-black text-sm sm:text-base font-mono">{bestRate ? (100 - safeNumber(bestRate.points)).toFixed(3) : '-'}</div>
-                                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">Price</div>
+                                    <div className="font-semibold text-black text-[13px] sm:text-base font-mono">{bestRate ? (100 - safeNumber(bestRate.points)).toFixed(3) : '-'}</div>
+                                    <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Price</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="font-semibold text-black text-sm sm:text-base font-mono">{bestRate ? safeNumber(bestRate.apr).toFixed(3) : '-'}%</div>
-                                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">APR</div>
+                                    <div className="font-semibold text-black text-[13px] sm:text-base font-mono">{bestRate ? safeNumber(bestRate.apr).toFixed(3) : '-'}%</div>
+                                    <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wider font-semibold">APR</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="font-semibold text-black text-sm sm:text-base font-mono">{bestPayment > 0 ? formatCurrency(bestPayment) : '-'}</div>
-                                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">Payment</div>
+                                    <div className="font-semibold text-black text-[13px] sm:text-base font-mono">{bestPayment > 0 ? formatCurrency(bestPayment) : '-'}</div>
+                                    <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Pmt</div>
                                   </div>
                                 </div>
 
-                                {/* Expand Icon */}
-                                <div className="ml-2">
+                                {/* Expand Icon - Desktop only */}
+                                <div className="ml-2 hidden sm:block">
                                   {expandedProgram === programName ?
                                     <ChevronUp className="w-5 h-5 text-gray-400" /> :
                                     <ChevronDown className="w-5 h-5 text-gray-400" />
@@ -1544,7 +1546,7 @@ export default function App() {
                             {expandedProgram === programName && filteredRateOptions.length > 0 && (
                               <div className="bg-white border-t border-black">
                                 {/* Rate Options Table */}
-                                <div className="px-4 py-2 overflow-x-auto">
+                                <div className="px-3 sm:px-4 py-2 rate-table-scroll">
                                   <table className="w-full text-xs">
                                     <thead>
                                       <tr className="border-b border-black">
@@ -1603,9 +1605,9 @@ export default function App() {
 
                                 {/* Adjustments Detail (for best rate option) */}
                                 {bestRate && bestRate.adjustments && bestRate.adjustments.length > 0 && (
-                                  <div className="px-4 py-3 border-t border-gray-200 bg-white">
-                                    <div className="text-[10px] font-semibold text-gray-400 mb-2 uppercase tracking-widest">Adjustments (Best Rate)</div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
+                                  <div className="px-3 sm:px-4 py-3 border-t border-gray-200 bg-white">
+                                    <div className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-[0.15em]">Adjustments (Best Rate)</div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5">
                                       {bestRate.adjustments.map((adj: Adjustment, adjIdx: number) => (
                                         <div key={adjIdx} className="flex justify-between text-xs border border-gray-200 px-2 py-1">
                                           <span className="text-gray-500 truncate mr-2">{adj.description}</span>
@@ -1649,7 +1651,7 @@ export default function App() {
                 </Card>
               )}
 
-              {lpResult && lpResult.rateOptions && lpResult.rateOptions.length > 0 && (() => {
+              {lpResult && Array.isArray(lpResult.rateOptions) && lpResult.rateOptions.length > 0 && (() => {
                 const isInvestment = formData.occupancyType === 'investment'
                 const prepayMonths = parseInt(formData.prepayPeriod) || 0
                 const priceCeiling = prepayMonths <= 24 ? 100.000 : 101.000
@@ -1668,17 +1670,17 @@ export default function App() {
                   ? ` - ${prepayMonths} Month Prepay`
                   : ''
                 return (
-                  <Card className="mt-6 bg-black text-white overflow-hidden" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
+                  <Card className="mt-5 sm:mt-6 bg-black text-white overflow-hidden" style={{ border: '1px solid rgba(39, 39, 42, 0.15)' }}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between flex-wrap gap-3">
-                        <div className="flex items-center gap-3">
-                          <Zap className="w-4 h-4 text-white" />
-                          <CardTitle className="text-[18px] font-bold text-white" style={{ letterSpacing: '-0.02em' }}>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Zap className="w-4 h-4 text-white shrink-0" />
+                          <CardTitle className="text-[16px] sm:text-[18px] font-extrabold text-white truncate" style={{ letterSpacing: '-0.02em' }}>
                             National Wholesale Rates{prepayLabel}
                           </CardTitle>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5 text-[11px] text-white/70 px-2 py-0.5 font-medium uppercase bg-white/10 rounded-[4px]">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-white/70 px-2 py-0.5 font-semibold uppercase bg-white/10 rounded-[4px]">
                             <ShieldCheck className="w-3 h-3" />Verified
                           </div>
                           <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">
@@ -1686,13 +1688,13 @@ export default function App() {
                           </span>
                         </div>
                       </div>
-                      <p className="text-[10px] text-white/30 mt-2 uppercase tracking-widest">
+                      <p className="text-[10px] text-white/30 mt-2 uppercase tracking-[0.15em] font-semibold">
                         Industry-wide pricing engine scan complete
                       </p>
                     </CardHeader>
                     <CardContent>
                       {filteredLpRates.length > 0 ? (
-                        <div className="overflow-x-auto border border-white/20">
+                        <div className="rate-table-scroll border border-white/20 rounded-[8px]">
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-white/20">
@@ -1743,13 +1745,13 @@ export default function App() {
 
               {/* ============ LOANNEX PIN GATE + RESULTS ============ */}
               {result && !lnUnlocked && (
-                <Card className="mt-6">
-                  <CardContent className="py-8">
+                <Card className="mt-5 sm:mt-6">
+                  <CardContent className="py-6 sm:py-8">
                     <div className="flex flex-col items-center gap-3">
                       <div className="flex items-center justify-center w-12 h-12 rounded-[10px] bg-[#FAFAFA]">
                         <Lock className="w-5 h-5 text-[#A1A1AA]" />
                       </div>
-                      <p className="text-[15px] font-semibold text-black" style={{ letterSpacing: '-0.02em' }}>Additional Pricing Source</p>
+                      <p className="text-[15px] font-semibold text-black text-center" style={{ letterSpacing: '-0.02em' }}>Additional Pricing Source</p>
                       <p className="text-[13px] text-[#A1A1AA]">Enter access code to unlock</p>
                       <div className="flex items-center gap-2 mt-2">
                         <Input
@@ -1769,7 +1771,7 @@ export default function App() {
                           <Unlock className="w-3.5 h-3.5 mr-1" />Unlock
                         </Button>
                       </div>
-                      {lnPinError && <p className="text-xs text-black font-medium">Invalid access code</p>}
+                      {lnPinError && <p className="text-xs text-black font-semibold">Invalid access code</p>}
                     </div>
                   </CardContent>
                 </Card>
@@ -1790,12 +1792,12 @@ export default function App() {
               )}
 
               {lnUnlocked && !lnLoading && lnResult && lnResult.rateOptions && lnResult.rateOptions.length > 0 && (
-                <Card className="mt-6">
+                <Card className="mt-5 sm:mt-6">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-3">
-                        <Zap className="w-4 h-4 text-black" />
-                        <CardTitle className="text-[18px] font-bold text-black" style={{ letterSpacing: '-0.02em' }}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Zap className="w-4 h-4 text-black shrink-0" />
+                        <CardTitle className="text-[16px] sm:text-[18px] font-extrabold text-black truncate" style={{ letterSpacing: '-0.02em' }}>
                           OpenBroker AI PPE
                         </CardTitle>
                       </div>
@@ -1810,15 +1812,15 @@ export default function App() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-x-auto rounded-[12px]" style={{ border: '1px solid rgba(39, 39, 42, 0.12)' }}>
+                    <div className="rate-table-scroll rounded-[12px]" style={{ border: '1px solid rgba(39, 39, 42, 0.12)' }}>
                       <table className="w-full text-sm">
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(39, 39, 42, 0.15)' }}>
-                            <th className="text-left py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Program</th>
-                            <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Rate</th>
-                            <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Price</th>
-                            <th className="text-right py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Payment</th>
-                            <th className="text-left py-2.5 px-4 text-[11px] font-semibold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Investor</th>
+                            <th className="text-left py-2.5 px-3 sm:px-4 text-[10px] sm:text-[11px] font-bold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Program</th>
+                            <th className="text-right py-2.5 px-3 sm:px-4 text-[10px] sm:text-[11px] font-bold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Rate</th>
+                            <th className="text-right py-2.5 px-3 sm:px-4 text-[10px] sm:text-[11px] font-bold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Price</th>
+                            <th className="text-right py-2.5 px-3 sm:px-4 text-[10px] sm:text-[11px] font-bold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Payment</th>
+                            <th className="text-left py-2.5 px-3 sm:px-4 text-[10px] sm:text-[11px] font-bold uppercase text-[#71717A]" style={{ letterSpacing: '0.06em' }}>Investor</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1864,7 +1866,7 @@ export default function App() {
               )}
 
               {/* Submit Loan Button */}
-              <div className="mt-8">
+              <div className="mt-6 sm:mt-8 no-print">
                 <a href="https://sub.defywholesale.com/" target="_blank" rel="noopener noreferrer" className="block">
                   <Button type="button" size="lg" className="w-full">
                     <ExternalLink className="w-4 h-4 mr-2" />Submit + Lock
@@ -1873,14 +1875,15 @@ export default function App() {
               </div>
               </>
             ) : isLoading ? (
-              <div className="py-16 flex flex-col items-center justify-center">
-                <div className="w-full max-w-md">
+              <div className="loading-container">
+                <div className="w-full max-w-sm px-4">
                   <div className="loading-bar-track">
                     <div
                       className="loading-bar-fill"
                       style={{ width: `${loadingProgress}%` }}
                     />
                   </div>
+                  <p className="loading-label text-center mt-5">Retrieving live rates</p>
                 </div>
               </div>
             ) : null}
@@ -1888,14 +1891,14 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="bg-white mt-16" style={{ borderTop: '1px solid rgba(39, 39, 42, 0.1)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10" style={{ padding: '12px 40px' }}>
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] text-[#71717A]">&copy; {new Date().getFullYear()} OpenBroker Labs</span>
+      <footer className="bg-white mt-auto no-print" style={{ borderTop: '1px solid rgba(39, 39, 42, 0.1)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-4 sm:py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+            <span className="text-[12px] text-[#71717A] font-medium">&copy; {new Date().getFullYear()} OpenBroker Labs</span>
             <div className="flex items-center gap-5">
-              <a href="#" className="text-[12px] text-[#A1A1AA] hover:text-black transition-colors duration-150">Privacy</a>
-              <a href="#" className="text-[12px] text-[#A1A1AA] hover:text-black transition-colors duration-150">Terms</a>
-              <a href="#" className="text-[12px] text-[#A1A1AA] hover:text-black transition-colors duration-150">Support</a>
+              <a href="#" className="text-[12px] text-[#A1A1AA] hover:text-black transition-colors duration-150 font-medium">Privacy</a>
+              <a href="#" className="text-[12px] text-[#A1A1AA] hover:text-black transition-colors duration-150 font-medium">Terms</a>
+              <a href="#" className="text-[12px] text-[#A1A1AA] hover:text-black transition-colors duration-150 font-medium">Support</a>
             </div>
           </div>
         </div>
