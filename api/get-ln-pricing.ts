@@ -430,12 +430,38 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     }
   }
 
-  // Fill numeric fields (includes DSCR-specific fields discovered after Income Doc selection)
+  // Fill ONLY main form numeric fields — DO NOT fill qualified-price-only fields here
+  // (Mo. Rental Income, Property Expenses, Liabilities, Reserves, # of Financed Properties
+  //  are filled later in the scoped qualified price section after clicking "Get Price")
   var numerics = ['Appraised Value', 'Purchase Price', 'First Lien Amount', 'FICO', 'DTI',
-    'Months Reserves', 'DSCR', 'DSCR Ratio', 'DSCR %',
-    'Mo. Rental Income', 'Monthly Rental Income', 'Gross Rental Income',
-    '# of Financed Properties', 'Number of Financed Properties', 'Financed Properties',
-    'Income', 'Monthly Income', 'Property Expenses', 'Liabilities', 'Monthly Liabilities', 'Reserves', 'Household Size'];
+    'Months Reserves'];
+
+  // DSCR ratio field — appears only when Income Doc = DSCR, needs special handling
+  if (fieldMap['DSCR'] && fieldMap['DSCR'] !== '') {
+    // Try exact label match first
+    var dscrFilled = false;
+    var dscrLabels = ['DSCR', 'DSCR Ratio', 'DSCR %'];
+    for (var dli = 0; dli < dscrLabels.length && !dscrFilled; dli++) {
+      var dscrField = findFieldInput(dscrLabels[dli]);
+      if (dscrField) {
+        var dscrInput = dscrField.el;
+        if (dscrInput.tagName !== 'INPUT') {
+          dscrInput = dscrField.el.querySelector ? dscrField.el.querySelector('input') || dscrField.el : dscrField.el;
+        }
+        if (dscrInput && dscrInput.tagName === 'INPUT') {
+          dscrInput.focus();
+          var dscrSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+          if (dscrSetter) dscrSetter.call(dscrInput, fieldMap['DSCR']);
+          dscrInput.dispatchEvent(new Event('input', {bubbles: true}));
+          dscrInput.dispatchEvent(new Event('change', {bubbles: true}));
+          dscrInput.dispatchEvent(new Event('blur', {bubbles: true}));
+          diag.fills.push('DSCR: ' + fieldMap['DSCR'] + ' (via ' + dscrLabels[dli] + ')');
+          dscrFilled = true;
+        }
+      }
+    }
+    if (!dscrFilled) diag.fills.push('DSCR: NOT_FOUND (tried all labels)');
+  }
   for (var ni = 0; ni < numerics.length; ni++) {
     var nkey = numerics[ni];
     if (fieldMap[nkey]) {
