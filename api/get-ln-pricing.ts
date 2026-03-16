@@ -87,6 +87,62 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
   var fieldMap = ${mapJson};
   var isRetry = ${isRetry};
 
+  // Helper: check if text contains a rate-like number (e.g. "7.250")
+  function hasRateNum(s) {
+    for (var ci2 = 0; ci2 < s.length - 4; ci2++) {
+      var ch = s.charCodeAt(ci2);
+      if (ch >= 53 && ch <= 57) { // 5-9
+        if (s[ci2+1] === '.' && s.charCodeAt(ci2+2) >= 48 && s.charCodeAt(ci2+2) <= 57 &&
+            s.charCodeAt(ci2+3) >= 48 && s.charCodeAt(ci2+3) <= 57 && s.charCodeAt(ci2+4) >= 48 && s.charCodeAt(ci2+4) <= 57) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  // Helper: extract rate value from text like "7.250%" → "7.250"
+  function extractRate(s) {
+    for (var ci3 = 0; ci3 < s.length - 5; ci3++) {
+      var ch = s.charCodeAt(ci3);
+      if (ch >= 53 && ch <= 57 && s[ci3+1] === '.') {
+        var num = s.substring(ci3, ci3+5);
+        if (s[ci3+5] === '%' || s[ci3+5] === ' ') return num;
+      }
+    }
+    return '';
+  }
+  // Helper: extract price value like "101.250"
+  function extractPrice(s) {
+    var idx = s.indexOf('1');
+    while (idx >= 0 && idx < s.length - 6) {
+      if (s.charCodeAt(idx+1) >= 48 && s.charCodeAt(idx+1) <= 57 &&
+          s.charCodeAt(idx+2) >= 48 && s.charCodeAt(idx+2) <= 57 &&
+          s[idx+3] === '.' &&
+          s.charCodeAt(idx+4) >= 48 && s.charCodeAt(idx+4) <= 57) {
+        return s.substring(idx, idx+7);
+      }
+      idx = s.indexOf('1', idx+1);
+    }
+    return '';
+  }
+  // Helper: extract payment like "$2,694.87"
+  function extractPmt(s) {
+    var idx = s.indexOf('$');
+    if (idx < 0) return '';
+    var end = idx + 1;
+    while (end < s.length && (s.charCodeAt(end) >= 48 && s.charCodeAt(end) <= 57 || s[end] === ',' || s[end] === '.')) end++;
+    return end > idx + 2 ? s.substring(idx, end) : '';
+  }
+  // Helper: extract lock days like "30 Days"
+  function extractLock(s) {
+    var idx = s.toLowerCase().indexOf('days');
+    if (idx < 2) return '';
+    var start = idx - 1;
+    while (start > 0 && (s[start] === ' ')) start--;
+    while (start > 0 && s.charCodeAt(start-1) >= 48 && s.charCodeAt(start-1) <= 57) start--;
+    return s.substring(start, idx).trim();
+  }
+
   diag.steps.push('url: ' + window.location.href);
   diag.steps.push('mode: ' + (isRetry ? 'retry' : 'initial'));
 
@@ -263,7 +319,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
         if (popover) {
           // PrimeNG popover renders content at body level, linked by ng-tns class
           var ngClass = '';
-          var classes = (popover.className || '').split(/\s+/);
+          var classes = (popover.className || '').split(' ');
           for (var ci2 = 0; ci2 < classes.length; ci2++) {
             if (classes[ci2].indexOf('ng-tns-') === 0) { ngClass = classes[ci2]; break; }
           }
@@ -637,7 +693,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       for (var ari = 0; ari < allRows.length; ari++) {
         var arText = (allRows[ari].textContent || '').trim();
         if (arText.length > 20 && arText.length < 300 &&
-            (arText.match(/\d+\.\d{3}/) || arText.indexOf('Eligible') >= 0)) {
+            (hasRateNum(arText) || arText.indexOf('Eligible') >= 0)) {
           diag.steps.push('row_item_click: ' + arText.substring(0, 80));
           allRows[ari].click();
           var firstChild = allRows[ari].querySelector('td, a, span, div');
@@ -719,26 +775,27 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     var epIdx = fullText.indexOf('Eligible');
     if (epIdx >= 0) diag.eligibleContext = fullText.substring(epIdx, Math.min(epIdx + 1500, fullText.length));
 
-    // Scrape rates from text
-    var rateLines = fullText.match(/[5-9]\.\d{3}\s*%[^\n]{0,300}/g);
-    if (rateLines && rateLines.length > 0) {
-      diag.steps.push('text_scrape: ' + rateLines.length + ' lines');
-      for (var rli = 0; rli < rateLines.length && rli < 100; rli++) {
-        var line = rateLines[rli].trim();
-        var rateM = line.match(/([5-9]\.\d{3})\s*%/);
-        var priceM = line.match(/(1\d{2}\.\d{3})/);
-        var lockM = line.match(/(\d+)\s*Days/i);
-        var pmtM = line.match(/\$([\d,]+\.\d{2})/);
-        if (rateM) {
-          rates.push({
-            'Rate': (rateM[1] || '') + '%' + (lockM ? ' ' + lockM[1] + ' Days' : ''),
-            'Price': priceM ? priceM[1] : '',
-            'Payment': pmtM ? '$' + pmtM[1] : '',
-            'raw': line.substring(0, 200),
-          });
-        }
+    // Scrape rates from text — split by lines and look for rate patterns
+    var textLines = fullText.split('\n');
+    var scrapedLines = 0;
+    for (var tli = 0; tli < textLines.length; tli++) {
+      var tline = textLines[tli].trim();
+      if (!tline || tline.length < 5) continue;
+      var rateVal = extractRate(tline);
+      if (rateVal) {
+        var priceVal = extractPrice(tline);
+        var pmtVal = extractPmt(tline);
+        var lockVal = extractLock(tline);
+        rates.push({
+          'Rate': rateVal + '%' + (lockVal ? ' ' + lockVal + ' Days' : ''),
+          'Price': priceVal,
+          'Payment': pmtVal,
+          'raw': tline.substring(0, 200),
+        });
+        scrapedLines++;
       }
     }
+    if (scrapedLines > 0) diag.steps.push('text_scrape: ' + scrapedLines + ' lines');
 
     // Capture DOM structure for debugging
     var containers = document.querySelectorAll('[class*=product], [class*=rate], [class*=pricing], [class*=result], [class*=eligible]');
