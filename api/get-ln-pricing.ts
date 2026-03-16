@@ -489,81 +489,61 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     return JSON.stringify({ success: false, error: 'no_get_price_button', diag: diag });
   }
 
-  // Wait for results table OR "Get Qualified Price" income form
+  // ========== MAIN RESULTS LOOP ==========
+  // LoanNex flow: Get Price → [Qualified Price form] → [Product list → click product] → Rate table
   var resultsFound = false;
   var qualifiedPriceHandled = false;
-  for (var attempt = 0; attempt < 10; attempt++) {
+  var productClicked = false;
+
+  for (var attempt = 0; attempt < 15; attempt++) {
     await sleep(1500);
-    // Check for standard HTML table OR PrimeNG table OR any data grid
+    var bodyText = (document.body.innerText || '');
+
+    // ---- STEP A: Check for final rate table (many rows = success) ----
     var tables = document.querySelectorAll('table, p-table, .p-datatable');
     for (var ti = 0; ti < tables.length; ti++) {
       var rows = tables[ti].querySelectorAll('tr');
-      // DSCR: rates appear directly (many rows). Non-DSCR: products appear (fewer rows)
-      if (rows.length > 2) {
-        diag.steps.push('results_at: ' + ((attempt+1)*1.5) + 's, rows: ' + rows.length + ', tag: ' + tables[ti].tagName);
+      if (rows.length > 3) {
+        diag.steps.push('results_at: ' + ((attempt+1)*1.5) + 's, rows: ' + rows.length);
         resultsFound = true;
         break;
-      }
-      // Check for product selection view (1 header + product rows)
-      if (rows.length === 2) {
-        var cellText = (rows[1].textContent || '').trim();
-        // If it's a real product row (not just "Choose a product" placeholder)
-        if (cellText.indexOf('Choose a product') < 0 && cellText.length > 10) {
-          diag.steps.push('product_row_at: ' + ((attempt+1)*1.5) + 's, text: ' + cellText.substring(0, 80));
-          resultsFound = true;
-          break;
-        }
       }
     }
     if (resultsFound) break;
 
-    // Check for "Get Qualified Price" second-step form (non-DSCR income qualification)
-    var bodyText = (document.body.innerText || '');
+    // ---- STEP B: Handle "Get Qualified Price" form (appears after Get Price) ----
     if (!qualifiedPriceHandled && bodyText.indexOf('Get Qualified Price') >= 0) {
       diag.steps.push('qualified_price_form_at: ' + ((attempt+1)*1.5) + 's');
+      await sleep(500);
 
-      // Fill qualified price sub-form fields
-      // Strategy: find "Get Qualified Price" button, scope to its parent container,
-      // then fill only inputs WITHIN that scoped section
-      await sleep(500); // let Angular render the qualified price form
-
-      // 1. Find the "Get Qualified Price" button and its containing section
+      // Find the button
       var qualBtn = null;
       var allBtns2 = document.querySelectorAll('button');
       for (var qbi = 0; qbi < allBtns2.length; qbi++) {
         var btnText = (allBtns2[qbi].textContent || '').trim();
-        if (btnText.indexOf('Get Qualified Price') >= 0 || btnText.indexOf('Qualified Price') >= 0) {
-          qualBtn = allBtns2[qbi]; break;
-        }
+        if (btnText.indexOf('Get Qualified Price') >= 0) { qualBtn = allBtns2[qbi]; break; }
       }
 
-      // 2. Scope the search: walk up from qualBtn to find a container that has the sub-form inputs
+      // Scope fill to qualified price section only
       var qualSection = null;
       if (qualBtn) {
         var qp = qualBtn.parentElement;
         for (var qwalk = 0; qwalk < 6 && qp; qwalk++) {
           var qInputs = qp.querySelectorAll('input:not([type=hidden]):not([type=checkbox])');
-          // The qualified price section should have ~5 inputs (rental, expenses, liabilities, reserves, financed)
-          if (qInputs.length >= 3 && qInputs.length <= 15) {
-            qualSection = qp;
-            break;
-          }
+          if (qInputs.length >= 3 && qInputs.length <= 15) { qualSection = qp; break; }
           qp = qp.parentElement;
         }
       }
 
       var filledQual = 0;
       if (qualSection) {
-        // 3. Find inputs ONLY within the qualified price section
         var qualFieldValues = [
           { keywords: ['rental', 'rent'], value: fieldMap['Mo. Rental Income'] || '5000' },
-          { keywords: ['property exp', 'prop exp'], value: fieldMap['Property Expenses'] || '500' },
+          { keywords: ['property exp'], value: fieldMap['Property Expenses'] || '500' },
           { keywords: ['liabilit'], value: fieldMap['Liabilities'] || '2000' },
           { keywords: ['reserve'], value: fieldMap['Reserves'] || '12' },
           { keywords: ['financed', '# of fin'], value: fieldMap['# of Financed Properties'] || '1' },
         ];
-
-        // Walk labels/text ONLY within qualSection
         var qLabels = qualSection.querySelectorAll('label, span, div');
         var filledQualInputs = [];
         for (var qfi = 0; qfi < qualFieldValues.length; qfi++) {
@@ -574,7 +554,6 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
             if (!lt || lt.length > 40) continue;
             for (var kwi = 0; kwi < qfv.keywords.length; kwi++) {
               if (lt.indexOf(qfv.keywords[kwi]) < 0) continue;
-              // Found label — find nearest input within same nex-app-field or parent
               var qContainer = qLabels[ql].parentElement;
               for (var qlvl = 0; qlvl < 4 && qContainer; qlvl++) {
                 var qInput = qContainer.querySelector('input:not([type=hidden]):not([type=checkbox])');
@@ -597,191 +576,116 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
             }
           }
         }
-        diag.steps.push('qual_fields_filled: ' + filledQual + ', section_inputs: ' + qualSection.querySelectorAll('input:not([type=hidden])').length);
-      } else {
-        diag.steps.push('qual_section_not_found');
-        // Fallback: try standard findFieldInput
-        var qualFields = ['Mo. Rental Income', 'Property Expenses', 'Liabilities',
-          'Reserves', '# of Financed Properties'];
-        for (var qi = 0; qi < qualFields.length; qi++) {
-          if (fieldMap[qualFields[qi]]) {
-            await setNumeric(qualFields[qi], fieldMap[qualFields[qi]]);
-          }
-        }
+        diag.steps.push('qual_fields_filled: ' + filledQual);
       }
-      await sleep(500);
+      await sleep(300);
 
-      // 4. Click "Get Qualified Price"
+      // Click "Get Qualified Price"
       if (qualBtn) {
         qualBtn.click();
         diag.steps.push('clicked_get_qualified_price');
-        await sleep(2000); // extra wait for qualified results to load
-      } else {
-        diag.steps.push('no_qualified_price_button');
+        await sleep(3000); // longer wait for products to load
       }
       qualifiedPriceHandled = true;
-
-      // Capture income field values AND their labels for diagnostics
-      var incomeInputs = document.querySelectorAll('input[type=text], input:not([type])');
-      var incVals = [];
-      var incLabels = [];
-      for (var ivi = 0; ivi < incomeInputs.length; ivi++) {
-        var iv = incomeInputs[ivi];
-        if (iv.offsetHeight > 0) {
-          var ivLabel = '';
-          var ivParent = iv.parentElement;
-          for (var ivl = 0; ivl < 4 && ivParent; ivl++) {
-            var ivLbl = ivParent.querySelector('label, span');
-            if (ivLbl && (ivLbl.textContent || '').trim().length > 0 && (ivLbl.textContent || '').trim().length < 30) {
-              ivLabel = (ivLbl.textContent || '').trim();
-              break;
-            }
-            ivParent = ivParent.parentElement;
-          }
-          incLabels.push(ivLabel + '=' + (iv.value || '(empty)'));
-        }
-        if (iv.value && iv.value !== '' && parseFloat(iv.value.replace(/[,$]/g, '')) > 0) {
-          incVals.push(iv.value);
-        }
-      }
-      diag.incomeFieldValues = incVals.slice(0, 15);
-      diag.qualFieldLabels = incLabels.slice(0, 20);
-      continue; // keep waiting for results table
+      continue;
     }
 
-    // Check for loading spinners (still waiting)
-    var spinners = document.querySelectorAll('.p-progress-spinner, .loading, [class*=spinner], [class*=loading]');
-    if (spinners.length > 0 && attempt < 9) continue;
-    // Check for "no results" or error text
-    var body = (document.body.innerText || '');
-    if (body.indexOf('No results') >= 0 || body.indexOf('no eligible') >= 0 || body.indexOf('No prices') >= 0 || body.indexOf('No programs') >= 0) {
+    // ---- STEP C: Handle product selection (click first eligible product) ----
+    if (!productClicked && qualifiedPriceHandled) {
+      // Strategy 1: Look for clickable product rows in a table
+      var productRows = [];
+      for (var pti = 0; pti < tables.length; pti++) {
+        var pRows = tables[pti].querySelectorAll('tr');
+        for (var pri = 1; pri < pRows.length; pri++) {
+          var pText = (pRows[pri].textContent || '').trim();
+          if (pText.length > 5 && pText.indexOf('Choose a product') < 0) {
+            productRows.push(pRows[pri]);
+          }
+        }
+      }
+      if (productRows.length > 0) {
+        diag.steps.push('product_rows_found: ' + productRows.length + ', clicking_first: ' + (productRows[0].textContent || '').trim().substring(0, 80));
+        productRows[0].click();
+        // Also try clicking the first cell/link inside
+        var firstCell = productRows[0].querySelector('td, a, span');
+        if (firstCell) firstCell.click();
+        productClicked = true;
+        await sleep(3000);
+        continue;
+      }
+
+      // Strategy 2: Look for clickable elements with product-like text (not in table)
+      var clickables = document.querySelectorAll('a, button, [role=button], [class*=product], [class*=clickable], div[style*=cursor], span[style*=cursor]');
+      for (var cli = 0; cli < clickables.length; cli++) {
+        var clText = (clickables[cli].textContent || '').trim();
+        // Product names often contain "30 YR", "DSCR", "Fixed", "ARM", investor names
+        if (clText.length > 10 && clText.length < 200 &&
+            (clText.indexOf('YR') >= 0 || clText.indexOf('Year') >= 0 || clText.indexOf('DSCR') >= 0 ||
+             clText.indexOf('Fixed') >= 0 || clText.indexOf('ARM') >= 0 || clText.indexOf('NonQM') >= 0 ||
+             clText.indexOf('Non QM') >= 0 || clText.indexOf('Non-QM') >= 0)) {
+          diag.steps.push('product_link_found: ' + clText.substring(0, 80));
+          clickables[cli].click();
+          productClicked = true;
+          await sleep(3000);
+          break;
+        }
+      }
+      if (productClicked) continue;
+
+      // Strategy 3: Look for any row/item that appeared after qualified price
+      var allRows = document.querySelectorAll('tr, [role=row], [role=listitem], [class*=item]');
+      for (var ari = 0; ari < allRows.length; ari++) {
+        var arText = (allRows[ari].textContent || '').trim();
+        if (arText.length > 20 && arText.length < 300 &&
+            (arText.match(/\d+\.\d{3}/) || arText.indexOf('Eligible') >= 0)) {
+          diag.steps.push('row_item_click: ' + arText.substring(0, 80));
+          allRows[ari].click();
+          var firstChild = allRows[ari].querySelector('td, a, span, div');
+          if (firstChild) firstChild.click();
+          productClicked = true;
+          await sleep(3000);
+          break;
+        }
+      }
+      if (productClicked) continue;
+    }
+
+    // ---- STEP D: Check for error/empty states ----
+    if (bodyText.indexOf('No results') >= 0 || bodyText.indexOf('no eligible') >= 0 ||
+        bodyText.indexOf('No prices') >= 0 || bodyText.indexOf('No programs') >= 0 ||
+        bodyText.indexOf('not eligible') >= 0 || bodyText.indexOf('Not Eligible') >= 0) {
       diag.steps.push('no_results_text_at: ' + ((attempt+1)*1.5) + 's');
       break;
     }
-    // Check for any new content after Get Price (investor names, rate numbers)
-    // Only trust actual table elements — rate text like "31.997 %" can false-positive from form fields
-    // Look for actual rate patterns (e.g. "7.250%" or "6.875%") — NOT form labels
-    // "Investor" appears as "First Time Investor" label — don't match that
-    var rateTextFound = body.match(/[5-9]\.\d{3}\s*%/) || body.indexOf('Eligible Products') >= 0;
-    if (rateTextFound && attempt < 6) {
-      diag.steps.push('rate_text_hint_at: ' + ((attempt+1)*1.5) + 's, waiting_for_table');
-      continue; // keep waiting for actual table
+
+    // ---- STEP E: Still loading ----
+    var spinners = document.querySelectorAll('.p-progress-spinner, [class*=spinner], [class*=loading]');
+    if (spinners.length > 0 && attempt < 14) {
+      diag.steps.push('loading_at: ' + ((attempt+1)*1.5) + 's');
+      continue;
     }
-    if (rateTextFound) {
-      diag.steps.push('rate_text_only_at: ' + ((attempt+1)*1.5) + 's');
-      break; // give up waiting for table
+
+    // Late attempts: log what's on page
+    if (attempt >= 8) {
+      diag.steps.push('waiting_at: ' + ((attempt+1)*1.5) + 's');
     }
   }
 
-  if (!resultsFound) {
-    diag.steps.push('no_results_table');
-
-    // FALLBACK: Try alternative scraping strategies before giving up
-    var rates = [];
-
-    // Strategy 1: Look for PrimeNG data grid rows (rendered as divs, not tables)
-    var gridRows = document.querySelectorAll('[class*=datatable] [class*=row], [class*=p-datatable] tbody tr, .p-element tr, [role=row]');
-    if (gridRows.length > 1) {
-      diag.steps.push('found_grid_rows: ' + gridRows.length);
-      for (var gri = 0; gri < gridRows.length && gri < 50; gri++) {
-        var cells = gridRows[gri].querySelectorAll('td, [role=cell], [class*=cell]');
-        if (cells.length < 3) continue;
-        var cellTexts = [];
-        for (var gci = 0; gci < cells.length; gci++) {
-          cellTexts.push((cells[gci].textContent || '').trim());
-        }
-        rates.push({ cells: cellTexts, raw: (gridRows[gri].textContent || '').trim().substring(0, 300) });
-      }
-    }
-
-    // Strategy 2: Scrape rate data from page text using regex patterns
-    if (rates.length === 0) {
-      var fullText = (document.body.innerText || '');
-
-      // Look for rate/price patterns like "7.250% 30 Days 101.250 $750"
-      var rateLines = fullText.match(/[5-9]\.\d{3}\s*%[^\n]{0,200}/g);
-      if (rateLines && rateLines.length > 0) {
-        diag.steps.push('text_scrape_lines: ' + rateLines.length);
-        for (var rli = 0; rli < rateLines.length && rli < 50; rli++) {
-          var line = rateLines[rli].trim();
-          var rateM = line.match(/([5-9]\.\d{3})\s*%/);
-          var priceM = line.match(/(1\d{2}\.\d{3})/);
-          var lockM = line.match(/(\d+)\s*Days/i);
-          var pmtM = line.match(/\$([\d,]+\.\d{2})/);
-          if (rateM) {
-            rates.push({
-              'Rate': (rateM[1] || '') + '%' + (lockM ? ' ' + lockM[1] + ' Days' : ''),
-              'Price': priceM ? priceM[1] : '',
-              'Payment': pmtM ? '$' + pmtM[1] : '',
-              'raw': line.substring(0, 200),
-            });
-          }
-        }
-      }
-
-      // Capture diagnostic context
-      var gpIdx = fullText.indexOf('Get Price');
-      diag.afterGetPrice = gpIdx >= 0 ? fullText.substring(gpIdx, gpIdx + 1200) : fullText.substring(0, 1500);
-
-      var epIdx = fullText.indexOf('Eligible Products');
-      if (epIdx >= 0) diag.eligibleProductsContext = fullText.substring(epIdx, epIdx + 800);
-
-      // Capture ALL text after "Get Qualified Price" — this is where rate results appear
-      var gqpIdx = fullText.indexOf('Get Qualified Price');
-      if (gqpIdx >= 0) {
-        diag.afterQualifiedPrice = fullText.substring(gqpIdx, gqpIdx + 2000);
-      }
-
-      var allTbls = document.querySelectorAll('table, p-table, .p-datatable, [class*=datatable]');
-      var tblInfo = [];
-      for (var tbi = 0; tbi < allTbls.length; tbi++) {
-        var tblRows = allTbls[tbi].querySelectorAll('tr, [role=row]');
-        var rowTexts = [];
-        for (var tri = 0; tri < tblRows.length && tri < 5; tri++) {
-          rowTexts.push((tblRows[tri].textContent || '').trim().substring(0, 200));
-        }
-        tblInfo.push({ tag: allTbls[tbi].tagName, classes: (allTbls[tbi].className || '').substring(0, 100), rows: tblRows.length, content: rowTexts });
-      }
-      diag.tableElements = tblInfo;
-
-      // Also capture ALL DOM elements that might be data containers
-      var dataContainers = document.querySelectorAll('[class*=product], [class*=rate], [class*=pricing], [class*=result]');
-      var containerInfo = [];
-      for (var dci = 0; dci < dataContainers.length && dci < 10; dci++) {
-        containerInfo.push({
-          tag: dataContainers[dci].tagName,
-          classes: (dataContainers[dci].className || '').substring(0, 100),
-          text: (dataContainers[dci].textContent || '').trim().substring(0, 200),
-        });
-      }
-      diag.dataContainers = containerInfo;
-
-      diag.hasChooseProductText = fullText.indexOf('Choose a product to see pricing') >= 0;
-      diag.hasIneligibleLink = fullText.indexOf('View Ineligible') >= 0;
-    }
-
-    if (rates.length > 0) {
-      diag.steps.push('fallback_scraped: ' + rates.length + ' rows');
-    }
-    return JSON.stringify({ success: true, rates: rates, diag: diag });
-  }
-
-  await sleep(1000); // settle — allow table to fully render
-
-  // Scrape the results table (standard HTML table)
+  // ========== SCRAPE RESULTS ==========
   var rates = [];
-  var tables = document.querySelectorAll('table, p-table, .p-datatable');
-  for (var ti2 = 0; ti2 < tables.length; ti2++) {
-    var trs = tables[ti2].querySelectorAll('tr');
+
+  // Method 1: Standard HTML table scrape
+  var allTables = document.querySelectorAll('table, p-table, .p-datatable');
+  for (var ti2 = 0; ti2 < allTables.length; ti2++) {
+    var trs = allTables[ti2].querySelectorAll('tr');
     if (trs.length < 2) continue;
     var ths = trs[0].querySelectorAll('th, td');
     var headers = [];
     for (var h = 0; h < ths.length; h++) headers.push((ths[h].textContent || '').trim());
     diag.headers = headers;
-
-    for (var ri = 1; ri < trs.length && ri < 50; ri++) {
+    for (var ri = 1; ri < trs.length && ri < 100; ri++) {
       var tds = trs[ri].querySelectorAll('td');
-      if (tds.length < 3) continue;
+      if (tds.length < 2) continue;
       var row = {};
       for (var ci = 0; ci < tds.length && ci < headers.length; ci++) {
         row[headers[ci] || 'col' + ci] = (tds[ci].textContent || '').trim();
@@ -789,6 +693,63 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       rates.push(row);
     }
     if (rates.length > 0) break;
+  }
+
+  // Method 2: PrimeNG grid rows (div-based)
+  if (rates.length === 0) {
+    var gridRows = document.querySelectorAll('[role=row], [class*=p-datatable-row], [class*=datatable] tr');
+    if (gridRows.length > 1) {
+      diag.steps.push('grid_rows: ' + gridRows.length);
+      for (var gri = 0; gri < gridRows.length && gri < 100; gri++) {
+        var cells = gridRows[gri].querySelectorAll('td, [role=cell], [role=gridcell]');
+        if (cells.length < 2) continue;
+        var cellTexts = [];
+        for (var gci = 0; gci < cells.length; gci++) cellTexts.push((cells[gci].textContent || '').trim());
+        rates.push({ cells: cellTexts });
+      }
+    }
+  }
+
+  // Method 3: Text scrape for rate patterns
+  if (rates.length === 0) {
+    var fullText = (document.body.innerText || '');
+    // Capture rich diagnostic context
+    var gqpIdx = fullText.indexOf('Get Qualified Price');
+    if (gqpIdx >= 0) diag.afterQualifiedPrice = fullText.substring(gqpIdx, Math.min(gqpIdx + 3000, fullText.length));
+    var epIdx = fullText.indexOf('Eligible');
+    if (epIdx >= 0) diag.eligibleContext = fullText.substring(epIdx, Math.min(epIdx + 1500, fullText.length));
+
+    // Scrape rates from text
+    var rateLines = fullText.match(/[5-9]\.\d{3}\s*%[^\n]{0,300}/g);
+    if (rateLines && rateLines.length > 0) {
+      diag.steps.push('text_scrape: ' + rateLines.length + ' lines');
+      for (var rli = 0; rli < rateLines.length && rli < 100; rli++) {
+        var line = rateLines[rli].trim();
+        var rateM = line.match(/([5-9]\.\d{3})\s*%/);
+        var priceM = line.match(/(1\d{2}\.\d{3})/);
+        var lockM = line.match(/(\d+)\s*Days/i);
+        var pmtM = line.match(/\$([\d,]+\.\d{2})/);
+        if (rateM) {
+          rates.push({
+            'Rate': (rateM[1] || '') + '%' + (lockM ? ' ' + lockM[1] + ' Days' : ''),
+            'Price': priceM ? priceM[1] : '',
+            'Payment': pmtM ? '$' + pmtM[1] : '',
+            'raw': line.substring(0, 200),
+          });
+        }
+      }
+    }
+
+    // Capture DOM structure for debugging
+    var containers = document.querySelectorAll('[class*=product], [class*=rate], [class*=pricing], [class*=result], [class*=eligible]');
+    var cInfo = [];
+    for (var dci = 0; dci < containers.length && dci < 15; dci++) {
+      cInfo.push({ tag: containers[dci].tagName, cls: (containers[dci].className || '').substring(0, 80), text: (containers[dci].textContent || '').trim().substring(0, 200) });
+    }
+    if (cInfo.length > 0) diag.dataContainers = cInfo;
+
+    // Capture full page text (last 3000 chars likely have results)
+    diag.pageTextTail = fullText.substring(Math.max(0, fullText.length - 3000));
   }
 
   diag.steps.push('scraped: ' + rates.length + ' rows');
