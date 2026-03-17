@@ -36,12 +36,12 @@ function mapFormToLN(body: any): Record<string, string> {
   // Prefer numeric dscrValue; fall back to extracting from dscrRatio range string
   const dscrNum = body.dscrValue || (body.dscrRatio ? parseFloat(String(body.dscrRatio).replace(/[><=]/g, '').split('-')[0]) : 1.0)
   const dscrVal = isDSCR ? String(dscrNum || '1.0') : ''
-  // Always provide rental income default — LN qualified price form may show Mo. Rental Income for any scenario
+  // Always provide rental income default -- LN qualified price form may show Mo. Rental Income for any scenario
   const rentalVal = String(body.grossRent || body.grossRentalIncome || '5000')
   const ppVal = isInvestment ? '5 Year' : 'No Penalty'
   const finProps = isInvestment ? '1' : '1'
 
-  // Income qualification fields — LN may show "Get Qualified Price" for any scenario
+  // Income qualification fields -- LN may show "Get Qualified Price" for any scenario
   // Always provide defaults so the qualified price form can be filled if it appears
   const monthlyIncome = String(body.monthlyIncome || '25000')
   const propertyExpenses = String(body.propertyExpenses || '500')
@@ -51,7 +51,7 @@ function mapFormToLN(body: any): Record<string, string> {
   return {
     'Loan Type': loanTypeMap[body.loanType] || 'First Lien',
     'Purpose': purposeMap[body.loanPurpose] || 'Purchase',
-    // DSCR forces Investment occupancy — DSCR programs are investment-only on LoanNex
+    // DSCR forces Investment occupancy -- DSCR programs are investment-only on LoanNex
     'Occupancy': isDSCR ? 'Investment' : (occupancyMap[body.occupancyType] || 'Investment'),
     'Property Type': propertyMap[body.propertyType] || 'SFR',
     'Income Doc': docMap[body.documentationType] || 'DSCR',
@@ -64,7 +64,7 @@ function mapFormToLN(body: any): Record<string, string> {
     'FICO': creditScore,
     'DTI': String(body.dti || ''),
     'Escrows': body.impoundType === 'noescrow' || body.impoundType === '3' ? 'Waived' : 'Yes',
-    // DSCR/Investment fields — include label variants
+    // DSCR/Investment fields -- include label variants
     'DSCR': dscrVal, 'DSCR Ratio': dscrVal, 'DSCR %': dscrVal,
     'Mo. Rental Income': rentalVal, 'Monthly Rental Income': rentalVal, 'Gross Rental Income': rentalVal,
     'Prepay Penalty': ppVal, 'Prepayment Penalty': ppVal,
@@ -87,61 +87,8 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
   var fieldMap = ${mapJson};
   var isRetry = ${isRetry};
 
-  // Helper: check if text contains a rate-like number (e.g. "7.250")
-  function hasRateNum(s) {
-    for (var ci2 = 0; ci2 < s.length - 4; ci2++) {
-      var ch = s.charCodeAt(ci2);
-      if (ch >= 53 && ch <= 57) { // 5-9
-        if (s[ci2+1] === '.' && s.charCodeAt(ci2+2) >= 48 && s.charCodeAt(ci2+2) <= 57 &&
-            s.charCodeAt(ci2+3) >= 48 && s.charCodeAt(ci2+3) <= 57 && s.charCodeAt(ci2+4) >= 48 && s.charCodeAt(ci2+4) <= 57) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-  // Helper: extract rate value from text like "7.250%" → "7.250"
-  function extractRate(s) {
-    for (var ci3 = 0; ci3 < s.length - 5; ci3++) {
-      var ch = s.charCodeAt(ci3);
-      if (ch >= 53 && ch <= 57 && s[ci3+1] === '.') {
-        var num = s.substring(ci3, ci3+5);
-        if (s[ci3+5] === '%' || s[ci3+5] === ' ') return num;
-      }
-    }
-    return '';
-  }
-  // Helper: extract price value like "101.250"
-  function extractPrice(s) {
-    var idx = s.indexOf('1');
-    while (idx >= 0 && idx < s.length - 6) {
-      if (s.charCodeAt(idx+1) >= 48 && s.charCodeAt(idx+1) <= 57 &&
-          s.charCodeAt(idx+2) >= 48 && s.charCodeAt(idx+2) <= 57 &&
-          s[idx+3] === '.' &&
-          s.charCodeAt(idx+4) >= 48 && s.charCodeAt(idx+4) <= 57) {
-        return s.substring(idx, idx+7);
-      }
-      idx = s.indexOf('1', idx+1);
-    }
-    return '';
-  }
-  // Helper: extract payment like "$2,694.87"
-  function extractPmt(s) {
-    var idx = s.indexOf('$');
-    if (idx < 0) return '';
-    var end = idx + 1;
-    while (end < s.length && (s.charCodeAt(end) >= 48 && s.charCodeAt(end) <= 57 || s[end] === ',' || s[end] === '.')) end++;
-    return end > idx + 2 ? s.substring(idx, end) : '';
-  }
-  // Helper: extract lock days like "30 Days"
-  function extractLock(s) {
-    var idx = s.toLowerCase().indexOf('days');
-    if (idx < 2) return '';
-    var start = idx - 1;
-    while (start > 0 && (s[start] === ' ')) start--;
-    while (start > 0 && s.charCodeAt(start-1) >= 48 && s.charCodeAt(start-1) <= 57) start--;
-    return s.substring(start, idx).trim();
-  }
+  // Simple rate detection -- no regex, no complex char parsing
+  function hasRateNum(s) { return s.indexOf('.') > 0 && s.indexOf('%') > 0; }
 
   diag.steps.push('url: ' + window.location.href);
   diag.steps.push('mode: ' + (isRetry ? 'retry' : 'initial'));
@@ -185,7 +132,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
       diag.steps.push('has_get_price: ' + hasQuickPricer);
 
       if (!hasQuickPricer) {
-        // On Lock Desk — full page navigation for proper Angular form init
+        // On Lock Desk -- full page navigation for proper Angular form init
         diag.steps.push('on_lock_desk_hard_nav_to_qp');
         setTimeout(function() { window.location.href = '/nex-app'; }, 200);
         return JSON.stringify({ success: true, needsNextStep: true, rates: [], diag: diag });
@@ -223,7 +170,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     return JSON.stringify({ success: false, error: 'form_not_loaded', rates: [], diag: diag });
   }
 
-  // Find field input by label text — walk DOM to find associated PrimeNG component
+  // Find field input by label text -- walk DOM to find associated PrimeNG component
   function findFieldInput(labelText) {
     // Strategy: find text node matching label, then walk up to find container with input/dropdown
     var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
@@ -463,7 +410,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     return true;
   }
 
-  // Fill dropdown fields (order matters — Income Doc triggers dynamic fields)
+  // Fill dropdown fields (order matters -- Income Doc triggers dynamic fields)
   var dropdowns = ['Loan Type', 'Purpose', 'Occupancy', 'Property Type', 'Income Doc'];
   for (var di = 0; di < dropdowns.length; di++) {
     var key = dropdowns[di];
@@ -486,13 +433,13 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     }
   }
 
-  // Fill ONLY main form numeric fields — DO NOT fill qualified-price-only fields here
+  // Fill ONLY main form numeric fields -- DO NOT fill qualified-price-only fields here
   // (Mo. Rental Income, Property Expenses, Liabilities, Reserves, # of Financed Properties
   //  are filled later in the scoped qualified price section after clicking "Get Price")
   var numerics = ['Appraised Value', 'Purchase Price', 'First Lien Amount', 'FICO', 'DTI',
     'Months Reserves'];
 
-  // DSCR ratio field — appears only when Income Doc = DSCR, needs special handling
+  // DSCR ratio field -- appears only when Income Doc = DSCR, needs special handling
   if (fieldMap['DSCR'] && fieldMap['DSCR'] !== '') {
     // Try exact label match first
     var dscrFilled = false;
@@ -546,7 +493,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
   }
 
   // ========== MAIN RESULTS LOOP ==========
-  // LoanNex flow: Get Price → [Qualified Price form] → [Product list → click product] → Rate table
+  // LoanNex flow: Get Price -> [Qualified Price form] -> [Product list -> click product] -> Rate table
   var resultsFound = false;
   var qualifiedPriceHandled = false;
   var productClicked = false;
@@ -775,27 +722,9 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
     var epIdx = fullText.indexOf('Eligible');
     if (epIdx >= 0) diag.eligibleContext = fullText.substring(epIdx, Math.min(epIdx + 1500, fullText.length));
 
-    // Scrape rates from text — split by lines and look for rate patterns
-    var textLines = fullText.split('\n');
-    var scrapedLines = 0;
-    for (var tli = 0; tli < textLines.length; tli++) {
-      var tline = textLines[tli].trim();
-      if (!tline || tline.length < 5) continue;
-      var rateVal = extractRate(tline);
-      if (rateVal) {
-        var priceVal = extractPrice(tline);
-        var pmtVal = extractPmt(tline);
-        var lockVal = extractLock(tline);
-        rates.push({
-          'Rate': rateVal + '%' + (lockVal ? ' ' + lockVal + ' Days' : ''),
-          'Price': priceVal,
-          'Payment': pmtVal,
-          'raw': tline.substring(0, 200),
-        });
-        scrapedLines++;
-      }
-    }
-    if (scrapedLines > 0) diag.steps.push('text_scrape: ' + scrapedLines + ' lines');
+    // Capture full page text for the response handler to parse with real regex
+    diag.pageText = fullText.substring(0, 5000);
+    diag.pageTextTail = fullText.substring(Math.max(0, fullText.length - 5000));
 
     // Capture DOM structure for debugging
     var containers = document.querySelectorAll('[class*=product], [class*=rate], [class*=pricing], [class*=result], [class*=eligible]');
@@ -878,7 +807,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return JSON.stringify({ ok: false, error: 'no_iframe', iframes: iframes.length });
 })()`
 
-    // 7-step BQL: wrapper login → wait → nav to iframe → fill/scrape → wait → retry
+    // 7-step BQL: wrapper login -> wait -> nav to iframe -> fill/scrape -> wait -> retry
     // Steps 3-4 error from navigation (expected). Step 5 returns needsNextStep if on Lock Desk.
     // Steps 6-7 handle retry after hard nav to /nex-app for proper Angular form init.
     const bqlQuery = `mutation FillAndPrice {
@@ -937,9 +866,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
+    // If no table rates but page text captured, try regex scraping here (safe outside template)
+    let rates = resultData.rates || []
+    if (rates.length === 0 && resultData.diag) {
+      const pageText = resultData.diag.pageText || resultData.diag.pageTextTail || ''
+      if (pageText) {
+        const rateLines = pageText.match(/[5-9]\.\d{3}\s*%[^\n]{0,300}/g)
+        if (rateLines) {
+          for (const line of rateLines) {
+            const rateM = line.match(/([5-9]\.\d{3})\s*%/)
+            const priceM = line.match(/(1\d{2}\.\d{3})/)
+            const lockM = line.match(/(\d+)\s*Days/i)
+            const pmtM = line.match(/\$([\d,]+\.\d{2})/)
+            if (rateM) {
+              rates.push({
+                'Rate': (rateM[1] || '') + '% ' + (lockM ? lockM[1] + ' Days' : ''),
+                'Price': priceM ? priceM[1] : '',
+                'Payment': pmtM ? '$' + pmtM[1] : '',
+              })
+            }
+          }
+        }
+      }
+    }
+
     // Transform scraped table rows into rate options
-    // Header names vary (e.g. "Rate  Lock Period 1", "Price 2") — use keyword matching
-    const rates = resultData.rates || []
+    // Header names vary (e.g. "Rate  Lock Period 1", "Price 2") -- use keyword matching
     const findCol = (row: any, keywords: string[]): string => {
       for (const k of Object.keys(row)) {
         const kl = k.toLowerCase()
