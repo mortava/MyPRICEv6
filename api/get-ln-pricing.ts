@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const BROWSERLESS_URL = 'https://production-sfo.browserless.io/chromium/bql'
-export const config = { maxDuration: 60 }
+export const config = { maxDuration: 120 }
 
 // ================= Field Mapping =================
 function mapFormToLN(body: any): Record<string, string> {
@@ -17,7 +17,10 @@ function mapFormToLN(body: any): Record<string, string> {
   }
   const docMap: Record<string, string> = {
     fullDoc: 'Full Doc', dscr: 'DSCR', bankStatement: 'Bank Statement',
-    assetDepletion: 'Asset Depletion', voe: 'VOE', noRatio: 'No Ratio',
+    bankStatement12: '12 Mo. Bank Statement', bankStatement24: '24 Mo. Bank Statement',
+    bankStatementOther: 'Bank Statement', taxReturns1Yr: '1 Yr. Tax Returns',
+    assetDepletion: 'Asset Depletion', assetUtilization: 'Asset Utilization',
+    voe: 'VOE', noRatio: 'No Ratio',
   }
   const citizenMap: Record<string, string> = {
     usCitizen: 'US Citizen', permanentResident: 'Permanent Resident', foreignNational: 'Foreign National',
@@ -38,7 +41,13 @@ function mapFormToLN(body: any): Record<string, string> {
   const dscrVal = isDSCR ? String(dscrNum || '1.0') : ''
   // Always provide rental income default -- LN qualified price form may show Mo. Rental Income for any scenario
   const rentalVal = String(body.grossRent || body.grossRentalIncome || '5000')
-  const ppVal = isInvestment ? '5 Year' : 'No Penalty'
+  const prepayMap: Record<string, string> = {
+    '60mo': '5 Year', '48mo': '4 Year', '36mo': '3 Year',
+    '24mo': '2 Year', '12mo': '1 Year', 'none': 'No Penalty',
+  }
+  const ppVal = body.prepayPeriod && prepayMap[body.prepayPeriod]
+    ? prepayMap[body.prepayPeriod]
+    : isInvestment ? '5 Year' : 'No Penalty'
   const finProps = isInvestment ? '1' : '1'
 
   // Income qualification fields -- LN may show "Get Qualified Price" for any scenario
@@ -498,7 +507,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
   var qualifiedPriceHandled = false;
   var productClicked = false;
 
-  for (var attempt = 0; attempt < 15; attempt++) {
+  for (var attempt = 0; attempt < 10; attempt++) {
     await sleep(1500);
     var bodyText = (document.body.innerText || '');
 
@@ -663,7 +672,7 @@ function buildFillAndScrapeScript(fieldMap: Record<string, string>, email: strin
 
     // ---- STEP E: Still loading ----
     var spinners = document.querySelectorAll('.p-progress-spinner, [class*=spinner], [class*=loading]');
-    if (spinners.length > 0 && attempt < 14) {
+    if (spinners.length > 0 && attempt < 9) {
       diag.steps.push('loading_at: ' + ((attempt+1)*1.5) + 's');
       continue;
     }
@@ -812,19 +821,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Steps 6-7 handle retry after hard nav to /nex-app for proper Angular form init.
     const bqlQuery = `mutation FillAndPrice {
   loginPage: goto(url: "https://web.loannex.com/", waitUntil: networkIdle) { status time }
-  login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 6000) { value }
-  waitForNav: evaluate(content: "new Promise(r => setTimeout(r, 3000)).then(() => JSON.stringify({ok:true}))", timeout: 5000) { value }
-  navToIframe: evaluate(content: ${JSON.stringify(navScript)}, timeout: 8000) { value }
-  price: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 30000) { value }
-  waitForQP: evaluate(content: "new Promise(r => setTimeout(r, 5000)).then(() => JSON.stringify({ok:true}))", timeout: 8000) { value }
-  retryPrice: evaluate(content: ${JSON.stringify(retryScript)}, timeout: 30000) { value }
+  login: evaluate(content: ${JSON.stringify(loginScript)}, timeout: 5000) { value }
+  waitForNav: evaluate(content: "new Promise(r => setTimeout(r, 2000)).then(() => JSON.stringify({ok:true}))", timeout: 3000) { value }
+  navToIframe: evaluate(content: ${JSON.stringify(navScript)}, timeout: 5000) { value }
+  price: evaluate(content: ${JSON.stringify(fillScript)}, timeout: 25000) { value }
+  waitForQP: evaluate(content: "new Promise(r => setTimeout(r, 2000)).then(() => JSON.stringify({ok:true}))", timeout: 3000) { value }
+  retryPrice: evaluate(content: ${JSON.stringify(retryScript)}, timeout: 25000) { value }
 }`
 
     const bqlResp = await fetch(`${BROWSERLESS_URL}?token=${browserlessToken}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: bqlQuery }),
-      signal: AbortSignal.timeout(58000),
+      signal: AbortSignal.timeout(110000),
     })
 
     if (!bqlResp.ok) {
